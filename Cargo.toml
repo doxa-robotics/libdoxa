@@ -1,0 +1,21 @@
+[package]
+name = "libdoxa"
+description = "subsystem, tracking, and driving utilities for DOXA Robotics"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.v5]
+slot = 1
+icon = "cool-x"
+compress = true
+
+[dependencies]
+vexide = { version = "0.7.0-rc.1", default-features = false, features = [
+    "devices",
+    "core",
+    "async",
+] }
+vexide-motorgroup = "2.0.0"
+snafu = { version = "0.8.5", default-features = false, features = [
+    "rust_1_81",
+] }
