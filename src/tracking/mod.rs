@@ -58,6 +58,6 @@ impl TrackingSubsystem {
     }
 
     pub fn position(&self) -> Vec2<f64> {
-        self.offset.borrow().clone()
+        *self.offset.borrow()
     }
 }

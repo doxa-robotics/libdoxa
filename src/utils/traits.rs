@@ -54,8 +54,10 @@ impl<T: HasHeading> HasWrappingHeading for T {
     }
 }
 
-/// Struct to correct the wrapping heading of an object.
-struct WrappingHeadingCorrector<T: HasWrappingHeading> {
+/// Struct to correct a heading that wraps around.
+///
+/// This will turn a heading that wraps around into an absolute heading.
+pub struct WrappingHeadingCorrector<T: HasWrappingHeading> {
     last_heading: RefCell<f64>,
     heading_offset: RefCell<f64>,
     has_wrapping_heading: T,
