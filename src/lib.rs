@@ -3,5 +3,6 @@
 extern crate alloc;
 
 pub mod motorgroup;
+pub mod subsystems;
 pub mod tracking;
 pub mod utils;
