@@ -44,11 +44,9 @@ impl Drivetrain {
             action_finish_barrier: action_finish_barrier.clone(),
             _task: vexide::task::spawn(async move {
                 loop {
-                    if action_finish_barrier.is_none() {
-                        break;
-                    }
-                    let position = tracking.position();
-                    if let Some(mut action) = action.borrow_mut().take() {
+                    let mut action_owned = action.borrow_mut();
+                    if let Some(ref mut action_ref) = *action_owned {
+                        let position = tracking.position();
                         let mut left = left.borrow_mut();
                         let mut right = right.borrow_mut();
                         let context = actions::ActionContext {
@@ -66,25 +64,26 @@ impl Drivetrain {
                             left_velocity: left.velocity().unwrap_or(0.0) * wheel_circumference,
                             right_velocity: right.velocity().unwrap_or(0.0) * wheel_circumference,
                         };
-                        if let Some(voltage) = action.update(context) {
+                        if let Some(voltage) = action_ref.update(context) {
                             if let Err(e) = left.set_voltage(voltage.left) {
                                 log::error!("Failed to set left voltage: {:?}", e);
                             }
                             if let Err(e) = right.set_voltage(voltage.right) {
                                 log::error!("Failed to set right voltage: {:?}", e);
                             }
+                            drop(action_owned);
                         } else {
                             _ = left.set_voltage(0.0);
                             _ = right.set_voltage(0.0);
-                            mem::drop(left);
-                            mem::drop(right);
-                            mem::drop(action);
+                            drop(action_owned);
                             if let Some(barrier) = action_finish_barrier.as_ref() {
+                                mem::drop(left);
+                                mem::drop(right);
+                                *action.borrow_mut() = None;
                                 barrier.wait().await;
                             }
                         }
                     }
-
                     vexide::time::sleep(core::time::Duration::from_millis(10)).await;
                 }
             }),
