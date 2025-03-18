@@ -13,6 +13,7 @@ use crate::utils::{
 
 pub mod wheel;
 
+#[derive(Debug)]
 pub struct TrackingSubsystem {
     offset: Rc<RefCell<Vec2<f64>>>,
     _task: vexide::task::Task<()>,
