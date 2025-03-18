@@ -8,8 +8,10 @@ pub struct PneumaticSubsystem<const N: usize, const LOW_IS_EXTENDED: bool = fals
 impl<const N: usize, const LOW_IS_EXTENDED: bool> PneumaticSubsystem<N, LOW_IS_EXTENDED> {
     /// Creates a new `PneumaticSubsystem` with the given solenoids.
     pub fn new(solenoids: [vexide::devices::adi::AdiDigitalOut; N]) -> Self {
-        if N == 0 {
-            panic!("Cannot create PneumaticSubsystem with zero solenoids.");
+        const {
+            if N == 0 {
+                panic!("Cannot create PneumaticSubsystem with zero solenoids.");
+            }
         }
         Self { solenoids }
     }
