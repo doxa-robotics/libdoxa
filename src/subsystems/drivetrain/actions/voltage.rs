@@ -1,5 +1,6 @@
 use crate::subsystems::drivetrain::VoltagePair;
 
+#[derive(Debug)]
 pub struct VoltageAction {
     pub voltage: VoltagePair,
 }

@@ -1,3 +1,5 @@
+use core::fmt::Debug;
+
 use crate::utils::vec2::Vec2;
 
 mod forward;
@@ -9,7 +11,7 @@ mod voltage;
 /// the voltage of the motors.
 ///
 /// If an action is done, it should return `None`.
-pub trait Action {
+pub trait Action: Debug {
     fn update(&mut self, context: ActionContext) -> Option<super::VoltagePair>;
 }
 

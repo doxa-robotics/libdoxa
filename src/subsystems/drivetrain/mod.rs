@@ -53,14 +53,12 @@ impl Drivetrain {
                             offset: position,
                             left_offset: left
                                 .position()
-                                .map(|x| x.as_revolutions() / wheel_circumference)
-                                .unwrap_or(0.0)
-                                * wheel_circumference,
+                                .map(|x| x.as_revolutions() * wheel_circumference)
+                                .unwrap_or(0.0),
                             right_offset: right
                                 .position()
-                                .map(|x| x.as_revolutions() / wheel_circumference)
-                                .unwrap_or(0.0)
-                                * wheel_circumference,
+                                .map(|x| x.as_revolutions() * wheel_circumference)
+                                .unwrap_or(0.0),
                             left_velocity: left.velocity().unwrap_or(0.0) * wheel_circumference,
                             right_velocity: right.velocity().unwrap_or(0.0) * wheel_circumference,
                         };
@@ -83,6 +81,8 @@ impl Drivetrain {
                                 barrier.wait().await;
                             }
                         }
+                    } else {
+                        mem::drop(action_owned);
                     }
                     vexide::time::sleep(core::time::Duration::from_millis(10)).await;
                 }
@@ -97,7 +97,7 @@ impl Drivetrain {
         self.action_finish_barrier = Some(Barrier::new(2)).into();
     }
 
-    pub async fn action(&mut self, new_action: Box<dyn actions::Action>) {
+    pub async fn boxed_action(&mut self, new_action: Box<dyn actions::Action>) {
         let mut action = self.action.borrow_mut();
         *action = Some(new_action);
         drop(action);
@@ -107,6 +107,10 @@ impl Drivetrain {
         if let Some(barrier) = self.action_finish_barrier.as_ref() {
             barrier.wait().await;
         }
+    }
+
+    pub async fn action(&mut self, action: impl actions::Action + 'static) {
+        self.boxed_action(Box::new(action)).await;
     }
 
     pub fn cancel_action(&mut self) {
