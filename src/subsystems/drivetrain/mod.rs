@@ -25,7 +25,7 @@ impl From<f64> for VoltagePair {
 
 pub struct Drivetrain {
     action: Rc<RefCell<Option<Box<dyn actions::Action>>>>,
-    action_finish_barrier: Rc<Option<vexide::sync::Barrier>>,
+    action_finish_barrier: Rc<RefCell<Option<vexide::sync::Barrier>>>,
     _task: vexide::task::Task<()>,
 }
 
@@ -38,7 +38,7 @@ impl Drivetrain {
         tracking: TrackingSubsystem,
     ) -> Self {
         let action = Rc::new(RefCell::new(None));
-        let action_finish_barrier = Rc::new(None);
+        let action_finish_barrier = Rc::new(RefCell::new(None));
         Drivetrain {
             action: action.clone(),
             action_finish_barrier: action_finish_barrier.clone(),
@@ -73,11 +73,11 @@ impl Drivetrain {
                         } else {
                             _ = left.set_voltage(0.0);
                             _ = right.set_voltage(0.0);
-                            drop(action_owned);
-                            if let Some(barrier) = action_finish_barrier.as_ref() {
-                                mem::drop(left);
-                                mem::drop(right);
-                                *action.borrow_mut() = None;
+                            *action_owned = None;
+                            mem::drop(action_owned);
+                            mem::drop(left);
+                            mem::drop(right);
+                            if let Some(barrier) = action_finish_barrier.borrow().as_ref() {
                                 barrier.wait().await;
                             }
                         }
@@ -93,8 +93,6 @@ impl Drivetrain {
     pub fn set_voltage(&mut self, voltage: VoltagePair) {
         let mut action = self.action.borrow_mut();
         *action = Some(Box::new(actions::VoltageAction { voltage }));
-
-        self.action_finish_barrier = Some(Barrier::new(2)).into();
     }
 
     pub async fn boxed_action(&mut self, new_action: Box<dyn actions::Action>) {
@@ -102,11 +100,15 @@ impl Drivetrain {
         *action = Some(new_action);
         drop(action);
 
-        self.action_finish_barrier = Some(Barrier::new(2)).into();
+        let barrier = Barrier::new(2);
+        *self.action_finish_barrier.borrow_mut() = Some(barrier);
 
-        if let Some(barrier) = self.action_finish_barrier.as_ref() {
-            barrier.wait().await;
-        }
+        self.action_finish_barrier
+            .borrow()
+            .as_ref()
+            .unwrap()
+            .wait()
+            .await;
     }
 
     pub async fn action(&mut self, action: impl actions::Action + 'static) {
@@ -116,6 +118,5 @@ impl Drivetrain {
     pub fn cancel_action(&mut self) {
         let mut action = self.action.borrow_mut();
         *action = None;
-        self.action_finish_barrier = Rc::new(None);
     }
 }
