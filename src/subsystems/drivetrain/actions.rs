@@ -3,6 +3,7 @@ use core::fmt::Debug;
 use crate::utils::vec2::Vec2;
 
 mod forward;
+mod rotation;
 mod voltage;
 
 /// A drivetrain action.
@@ -18,6 +19,7 @@ pub trait Action: Debug {
 #[derive(Debug, Clone, Copy)]
 pub struct ActionContext {
     pub offset: Vec2<f64>,
+    pub heading: f64,
     pub left_offset: f64,
     pub right_offset: f64,
     pub left_velocity: f64,
@@ -25,4 +27,5 @@ pub struct ActionContext {
 }
 
 pub use forward::ForwardAction;
+pub use rotation::RotationAction;
 pub use voltage::VoltageAction;
