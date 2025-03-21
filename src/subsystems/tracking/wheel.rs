@@ -69,6 +69,7 @@ impl<T: HasRotation> TrackingWheel<T> {
     pub fn delta(&mut self) -> f64 {
         let position = self.sensor.position();
         let delta = position - self.last_position;
+        self.last_position = position;
         delta.as_radians() * self.circumference / (2.0 * f64::consts::PI)
     }
 
@@ -93,7 +94,7 @@ impl<T: HasRotation> TrackingWheel<T> {
                     Vec2::new(
                         0.0,
                         2.0 * (heading_delta / 2.0).sin()
-                            * (self.delta() / heading_delta - self.mounting_offset()),
+                            * (self.delta() / heading_delta + self.mounting_offset()),
                     )
                 }
             }
@@ -103,7 +104,7 @@ impl<T: HasRotation> TrackingWheel<T> {
                 } else {
                     Vec2::new(
                         2.0 * (heading_delta / 2.0).sin()
-                            * (self.delta() / heading_delta - self.mounting_offset()),
+                            * (self.delta() / heading_delta + self.mounting_offset()),
                         0.0,
                     )
                 }

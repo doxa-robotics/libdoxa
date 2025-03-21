@@ -2,8 +2,10 @@ use core::fmt::Debug;
 
 use crate::utils::vec2::Vec2;
 
+mod drive_to_point;
 mod forward;
 mod rotation;
+mod turn_to_point;
 mod voltage;
 
 /// A drivetrain action.
@@ -26,6 +28,8 @@ pub struct ActionContext {
     pub right_velocity: f64,
 }
 
+pub use drive_to_point::DriveToPointAction;
 pub use forward::ForwardAction;
 pub use rotation::RotationAction;
+pub use turn_to_point::TurnToPointAction;
 pub use voltage::VoltageAction;

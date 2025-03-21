@@ -52,6 +52,7 @@ impl TrackingSubsystem {
                             .sum::<Vec2<_>>())
                         / parallel_tracking_wheels.len() as f64;
                     *offset.borrow_mut() += average_displacement.rotated(average_heading);
+                    log::debug!("Offset: {:?}", *offset.borrow());
                     vexide::time::sleep(RotationSensor::UPDATE_INTERVAL).await;
                 }
             }),
