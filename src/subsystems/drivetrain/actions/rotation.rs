@@ -1,3 +1,5 @@
+use core::f64::consts::PI;
+
 use crate::utils::settling;
 use pid::Pid;
 
@@ -38,13 +40,13 @@ impl super::Action for RotationAction {
         if !self.initialized {
             // Normalize the setpoint to the closest direct angle to the current position
             let mut error = self.controller.setpoint - context.heading;
-            while error > 180.0 {
-                self.controller.setpoint -= 360.0;
-                error -= 360.0;
+            while error > PI {
+                self.controller.setpoint -= 2.0 * PI;
+                error -= 2.0 * PI;
             }
-            while error < -180.0 {
-                self.controller.setpoint += 360.0;
-                error += 360.0;
+            while error < -PI {
+                self.controller.setpoint += 2.0 * PI;
+                error += 2.0 * PI;
             }
             self.initialized = true; // Mark as initialized
         }

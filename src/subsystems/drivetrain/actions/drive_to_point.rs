@@ -63,6 +63,10 @@ impl Action for DriveToPointAction {
                 }
                 // Transition to driving action
                 self.forward_controller.setpoint = self.target.distance(context.offset);
+                log::debug!(
+                    "DriveToPointAction: Forward setpoint: {}",
+                    self.forward_controller.setpoint
+                );
                 self.state = DriveToPointState::Driving(ForwardAction::new(
                     self.forward_controller,
                     self.forward_tolerances,

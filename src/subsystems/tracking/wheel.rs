@@ -70,7 +70,7 @@ impl<T: HasRotation> TrackingWheel<T> {
         let position = self.sensor.position();
         let delta = position - self.last_position;
         self.last_position = position;
-        delta.as_radians() * self.circumference / (2.0 * f64::consts::PI)
+        delta.as_revolutions() * self.circumference
     }
 
     pub fn mounting_offset(&self) -> f64 {

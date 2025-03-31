@@ -1,10 +1,7 @@
 use core::cell::RefCell;
 
 use alloc::{rc::Rc, vec::Vec};
-use vexide::{
-    float::Float,
-    prelude::{RotationSensor, SmartDevice},
-};
+use vexide::prelude::{RotationSensor, SmartDevice};
 
 use crate::utils::{
     traits::{HasHeading, HasRotation},
@@ -36,10 +33,11 @@ impl TrackingSubsystem {
         Self {
             offset: offset.clone(),
             _task: vexide::task::spawn(async move {
-                let last_heading = heading_sensor.heading();
+                let mut last_heading = heading_sensor.heading();
                 loop {
                     let heading = heading_sensor.heading();
-                    let heading_delta = (heading - last_heading).rem_euclid(360.0);
+                    let heading_delta = heading - last_heading;
+                    last_heading = heading;
                     let average_heading = (heading + last_heading) / 2.0;
                     let average_displacement: Vec2<_> = (perpendicular_tracking_wheels
                         .iter_mut()
@@ -52,7 +50,17 @@ impl TrackingSubsystem {
                             .sum::<Vec2<_>>())
                         / parallel_tracking_wheels.len() as f64;
                     *offset.borrow_mut() += average_displacement.rotated(average_heading);
-                    log::debug!("Offset: {:?}", *offset.borrow());
+                    // SAFETY: This is not safe.
+                    let mut display = unsafe { vexide::devices::display::Display::new() };
+                    let shape = vexide::devices::display::Circle::new(
+                        vexide::devices::math::Point2 {
+                            x: (offset.borrow().x / 10.0 + 100.0) as i16,
+                            y: (offset.borrow().y / 10.0 + 100.0) as i16,
+                        },
+                        1,
+                    );
+                    display.fill(&shape, (255, 0, 0));
+                    vexide::io::println!("{:.2?},{:.2?}", offset.borrow().x, offset.borrow().y);
                     vexide::time::sleep(RotationSensor::UPDATE_INTERVAL).await;
                 }
             }),

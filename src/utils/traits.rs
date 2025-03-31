@@ -30,27 +30,33 @@ impl HasRotation for MotorGroup {
     }
 }
 
+impl HasRotation for () {
+    fn position(&self) -> Position {
+        Position::default()
+    }
+}
+
 impl<T: HasRotation> HasRotation for Rc<RefCell<T>> {
     fn position(&self) -> Position {
         self.borrow().position()
     }
 }
 
-/// Trait for objects that have a heading in degrees.
+/// Trait for objects that have a heading in radians.
 pub trait HasHeading {
-    /// Returns the heading of the object in degrees. This value does not wrap around.
+    /// Returns the heading of the object in radians. This value does not wrap around.
     fn heading(&self) -> f64;
 }
 
-/// Trait for objects that have a wrapping heading in degrees.
+/// Trait for objects that have a wrapping heading in radians.
 pub trait HasWrappingHeading {
-    /// Returns the heading of the object in degrees, wrapped to the range [0, 360).
+    /// Returns the heading of the object in radians, wrapped to the range [0, 360).
     fn wrapping_heading(&self) -> f64;
 }
 
 impl<T: HasHeading> HasWrappingHeading for T {
     fn wrapping_heading(&self) -> f64 {
-        self.heading().rem_euclid(360.0)
+        self.heading().rem_euclid(2.0 * core::f64::consts::PI)
     }
 }
 
@@ -70,10 +76,10 @@ impl<T: HasWrappingHeading> HasHeading for WrappingHeadingCorrector<T> {
         let heading_offset = *self.heading_offset.borrow();
 
         let delta = current_heading - last_heading;
-        let delta = if delta > 180.0 {
-            delta - 360.0
-        } else if delta < -180.0 {
-            delta + 360.0
+        let delta = if delta > core::f64::consts::PI {
+            delta - 2.0 * core::f64::consts::PI
+        } else if delta < -core::f64::consts::PI {
+            delta + 2.0 * core::f64::consts::PI
         } else {
             delta
         };
@@ -87,13 +93,13 @@ impl<T: HasWrappingHeading> HasHeading for WrappingHeadingCorrector<T> {
 
 impl HasHeading for InertialSensor {
     fn heading(&self) -> f64 {
-        self.rotation().unwrap_or_default()
+        self.rotation().unwrap_or_default().to_radians()
     }
 }
 
 impl HasWrappingHeading for AdiGyroscope {
     fn wrapping_heading(&self) -> f64 {
-        self.yaw().unwrap_or_default().as_degrees()
+        self.yaw().unwrap_or_default().as_radians()
     }
 }
 

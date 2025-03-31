@@ -57,11 +57,17 @@ impl super::Action for ForwardAction {
             return None;
         }
 
-        Some(
-            self.controller
-                .next_control_output(average_distance)
-                .output
-                .into(),
-        )
+        let output = self.controller.next_control_output(average_distance).output;
+
+        log::debug!(
+            "Distance: {:.2?} Control output: {:.2?} Error: {:.2?} Setpoint: {:.2?} heading: {:.2?}",
+            average_distance,
+            output,
+            error,
+            self.controller.setpoint,
+            context.heading
+        );
+
+        Some(output.into())
     }
 }
