@@ -76,8 +76,8 @@ pub enum MirroredState {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct MirroredPneumaticSubsystem<const N: usize, const LOW_IS_EXTENDED: bool = false> {
-    left: PneumaticSubsystem<N, LOW_IS_EXTENDED>,
-    right: PneumaticSubsystem<N, LOW_IS_EXTENDED>,
+    pub left: PneumaticSubsystem<N, LOW_IS_EXTENDED>,
+    pub right: PneumaticSubsystem<N, LOW_IS_EXTENDED>,
     mirrored_state: MirroredState,
 }
 
