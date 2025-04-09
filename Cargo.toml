@@ -21,3 +21,8 @@ snafu = { version = "0.8.5", default-features = false, features = [
 ] }
 log = "0.4.26"
 pid = "4.0.0"
+nalgebra = { version = "0.33.2", default-features = false, features = [
+    "macros",
+    "alloc",
+    "libm",
+] }
