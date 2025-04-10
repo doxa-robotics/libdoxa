@@ -11,8 +11,8 @@ apt-get install -y \
   openssl
 
 ## Install rustup and common components
-curl https://sh.rustup.rs -sSf | sh -s -- -y 
-export RUST_TOOLCHAIN = "nightly-2025-02-18"
+RUST_TOOLCHAIN="nightly-2025-02-18"
+curl https://sh.rustup.rs -sSf | sh -s -- -y
 rustup install $RUST_TOOLCHAIN
 rustup component add rustfmt
 rustup component add rustfmt --toolchain $RUST_TOOLCHAIN
