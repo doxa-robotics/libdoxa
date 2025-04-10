@@ -14,10 +14,12 @@ use vexide::prelude::Float as _;
 
 use crate::utils::pose::Pose;
 
+use super::Path;
+
 #[rustfmt::skip]
 const CURVE_FITTING_MATRIX: nalgebra::Matrix4<f32> = nalgebra::Matrix4::new(
     2.0, -2.0, 1.0, 1.0,
-    -3.0, 2.0, -2.0, -1.0,
+    -3.0, 3.0, -2.0, -1.0,
     0.0, 0.0, 1.0, 0.0,
     1.0, 0.0, 0.0, 0.0
     // Inverse of
@@ -35,15 +37,28 @@ struct Cubic {
 }
 
 impl Cubic {
-    fn new(a: f32, b: f32, c: f32, d: f32) -> Self {
+    pub fn new(a: f32, b: f32, c: f32, d: f32) -> Self {
         Self { a, b, c, d }
     }
 
-    fn evaluate(&self, t: f32) -> f32 {
+    pub fn evaluate(&self, t: f32) -> f32 {
         self.a * t.powi(3) + self.b * t.powi(2) + self.c * t + self.d
     }
 
-    fn from_endpoints(start: f32, end: f32, start_derivative: f32, end_derivative: f32) -> Self {
+    pub fn evaluate_derivative(&self, t: f32) -> f32 {
+        3.0 * self.a * t.powi(2) + 2.0 * self.b * t + self.c
+    }
+
+    pub fn evaluate_second_derivative(&self, t: f32) -> f32 {
+        6.0 * self.a * t + 2.0 * self.b
+    }
+
+    pub fn from_endpoints(
+        start: f32,
+        end: f32,
+        start_derivative: f32,
+        end_derivative: f32,
+    ) -> Self {
         let vector = nalgebra::Vector4::new(start, end, start_derivative, end_derivative);
         let coeffs = CURVE_FITTING_MATRIX * vector;
         Cubic::new(coeffs.x, coeffs.y, coeffs.z, coeffs.w)
@@ -60,14 +75,20 @@ impl CubicParameterPath {
     ///
     /// easing is a value from [0.0, infinity) that determines how "curvy" the path is.
     pub fn new(start_pose: Pose, start_easing: f32, end_pose: Pose, end_easing: f32) -> Self {
-        let x = Cubic::from_endpoints(start_pose.x(), start_easing, end_pose.x(), end_easing);
-        let y = Cubic::from_endpoints(start_pose.y(), start_easing, end_pose.y(), end_easing);
+        let x = Cubic::from_endpoints(
+            start_pose.x(),
+            end_pose.x(),
+            start_easing * start_pose.heading().cos(),
+            end_easing * end_pose.heading().cos(),
+        );
+        let y = Cubic::from_endpoints(
+            start_pose.y(),
+            end_pose.y(),
+            start_easing * start_pose.heading().sin(),
+            end_easing * end_pose.heading().sin(),
+        );
 
         Self { x, y }
-    }
-
-    pub fn evaluate(&self, t: f32) -> (f32, f32) {
-        (self.x.evaluate(t), self.y.evaluate(t))
     }
 
     pub fn debug_render(&self, display: &mut vexide::devices::display::Display) {
@@ -79,12 +100,12 @@ impl CubicParameterPath {
             display.fill(
                 &vexide::devices::display::Line::new(
                     vexide::devices::math::Point2 {
-                        x: (last_point.0 * 10.0) as i16,
-                        y: (last_point.1 * 10.0) as i16,
+                        x: (last_point.x) as i16,
+                        y: (last_point.y) as i16,
                     },
                     vexide::devices::math::Point2 {
-                        x: (point.0 * 10.0) as i16,
-                        y: (point.1 * 10.0) as i16,
+                        x: (point.x) as i16,
+                        y: (point.y) as i16,
                     },
                 ),
                 (255, 255, 255),
@@ -92,5 +113,22 @@ impl CubicParameterPath {
             last_point = point;
             t += dt;
         }
+    }
+}
+
+impl Path for CubicParameterPath {
+    fn evaluate(&self, t: f32) -> Pose {
+        let x = self.x.evaluate(t);
+        let y = self.y.evaluate(t);
+        let heading = self
+            .x
+            .evaluate_derivative(t)
+            .atan2(self.y.evaluate_derivative(t));
+        Pose::new(x, y, heading)
+    }
+
+    fn length(&self) -> f32 {
+        // TODO(@rh0820): #1 implement length calculation
+        todo!()
     }
 }

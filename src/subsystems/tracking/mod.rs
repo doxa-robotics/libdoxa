@@ -60,7 +60,6 @@ impl TrackingSubsystem {
                         1,
                     );
                     display.fill(&shape, (255, 0, 0));
-                    vexide::io::println!("{:.2?},{:.2?}", offset.borrow().x, offset.borrow().y);
                     vexide::time::sleep(RotationSensor::UPDATE_INTERVAL).await;
                 }
             }),
