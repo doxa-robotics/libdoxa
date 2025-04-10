@@ -18,6 +18,6 @@ rustup component add rustfmt
 rustup component add rustfmt --toolchain $RUST_TOOLCHAIN
 rustup component add clippy 
 rustup component add clippy --toolchain $RUST_TOOLCHAIN
-
-cargo install cargo-expand
-cargo install cargo-edit
+# vexide-specific things
+rustup component add rust-src --toolchain $RUST_TOOLCHAIN
+rustup component add llvm-tools --toolchain $RUST_TOOLCHAIN
