@@ -10,7 +10,7 @@
 //!
 //! The theory behind this can be found [here](http://geogebra.org/calculator/bkujghbu).
 
-use vexide::{io::println, prelude::Float as _};
+use vexide::prelude::Float as _;
 
 use crate::utils::pose::Pose;
 
@@ -29,6 +29,7 @@ const CURVE_FITTING_MATRIX: nalgebra::Matrix4<f32> = nalgebra::Matrix4::new(
     // 3.0, 2.0, 1.0, 0.0
 );
 
+#[derive(Debug, Clone, Copy)]
 struct Cubic {
     pub a: f32,
     pub b: f32,
@@ -49,10 +50,6 @@ impl Cubic {
         3.0 * self.a * t.powi(2) + 2.0 * self.b * t + self.c
     }
 
-    pub fn evaluate_second_derivative(&self, t: f32) -> f32 {
-        6.0 * self.a * t + 2.0 * self.b
-    }
-
     pub fn from_endpoints(
         start: f32,
         end: f32,
@@ -65,6 +62,7 @@ impl Cubic {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct CubicParametricPath {
     x: Cubic,
     y: Cubic,
@@ -127,18 +125,27 @@ impl Path for CubicParametricPath {
         Pose::new(x, y, heading)
     }
 
-    fn length_until(&self, t: f32) -> f32 {
+    fn length_until(&self, max_t: f32) -> f32 {
         // TODO(@rh0820): #1 implement length calculation using calculus
         // for now, just using a small step size
         let dt = 0.001;
         let mut length = 0.0;
         let mut last_point = self.evaluate(0.0);
         let mut t = dt;
-        while t <= 1.0 {
-            let point = self.evaluate(t);
-            length += last_point.distance(&point);
-            last_point = point;
-            t += dt;
+        if max_t >= 0.0 {
+            while t <= max_t {
+                let point = self.evaluate(t);
+                length += last_point.distance(&point);
+                last_point = point;
+                t += dt;
+            }
+        } else {
+            while t >= max_t {
+                let point = self.evaluate(t);
+                length -= last_point.distance(&point);
+                last_point = point;
+                t -= dt;
+            }
         }
         length
     }
