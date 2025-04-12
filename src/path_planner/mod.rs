@@ -1,8 +1,10 @@
+use core::fmt::Debug;
+
 use crate::utils::pose::Pose;
 
 pub mod cubic_parametric;
 
-pub trait Path {
+pub trait Path: Debug + Clone + Copy {
     fn length_until(&self, t: f32) -> f32;
     fn evaluate(&self, t: f32) -> Pose;
 
@@ -37,13 +39,14 @@ pub trait Path {
             None
         }
     }
-    fn closest_point(&self, pose: Pose, initial_t: Option<f32>) -> f32 {
+    fn closest_point(&self, pose: Pose, initial_t: Option<f32>, overshoot: Option<f32>) -> f32 {
         let dt = 0.01;
         let mut t = initial_t.unwrap_or(0.0);
         let mut closest_t = t;
         let mut closest_distance = f32::MAX;
         let mut last_distance = self.evaluate(t).distance(&pose);
-        while t <= 1.0 {
+        let overshoot = overshoot.unwrap_or(0.0);
+        while t <= 1.0 + overshoot {
             let current_point = self.evaluate(t);
             let distance = current_point.distance(&pose);
             if distance < closest_distance {
@@ -58,7 +61,7 @@ pub trait Path {
         }
         // Do a reverse search
         t = initial_t.unwrap_or(0.0);
-        while t >= 0.0 {
+        while t >= 0.0 - overshoot {
             let current_point = self.evaluate(t);
             let distance = current_point.distance(&pose);
             if distance < closest_distance {
