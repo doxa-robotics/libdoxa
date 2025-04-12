@@ -11,6 +11,16 @@ pub struct Pose {
     pub heading: f32,
 }
 
+impl Default for Pose {
+    fn default() -> Self {
+        Self {
+            x: 0.0,
+            y: 0.0,
+            heading: 0.0,
+        }
+    }
+}
+
 impl From<(f32, f32, f32)> for Pose {
     fn from(coords: (f32, f32, f32)) -> Self {
         Pose {
