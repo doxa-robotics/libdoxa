@@ -25,6 +25,27 @@ impl From<f64> for VoltagePair {
     }
 }
 
+impl VoltagePair {
+    /// Scales the voltage pair preserving the ratio while staying under the max
+    /// voltage
+    #[must_use = "does not mutate original value"]
+    pub fn max_voltage(self, max_voltage: f64) -> Self {
+        if self.left <= -max_voltage && self.right <= max_voltage {
+            self
+        } else {
+            let ratio = if self.left >= self.right {
+                max_voltage / self.left
+            } else {
+                max_voltage / self.right
+            };
+            VoltagePair {
+                left: self.left * ratio,
+                right: self.right * ratio,
+            }
+        }
+    }
+}
+
 pub struct Drivetrain {
     action: Rc<RefCell<Option<Box<dyn actions::Action>>>>,
     action_finish_barrier: Rc<RefCell<Option<vexide::sync::Barrier>>>,
