@@ -10,7 +10,7 @@
 //!
 //! The theory behind this can be found [here](http://geogebra.org/calculator/bkujghbu).
 
-use vexide::prelude::Float as _;
+use vexide::{io::println, prelude::Float as _};
 
 use crate::utils::pose::Pose;
 
@@ -65,12 +65,12 @@ impl Cubic {
     }
 }
 
-pub struct CubicParameterPath {
+pub struct CubicParametricPath {
     x: Cubic,
     y: Cubic,
 }
 
-impl CubicParameterPath {
+impl CubicParametricPath {
     /// Creates a new CubicParameterPath with the given start and end poses
     ///
     /// easing is a value from [0.0, infinity) that determines how "curvy" the path is.
@@ -116,7 +116,7 @@ impl CubicParameterPath {
     }
 }
 
-impl Path for CubicParameterPath {
+impl Path for CubicParametricPath {
     fn evaluate(&self, t: f32) -> Pose {
         let x = self.x.evaluate(t);
         let y = self.y.evaluate(t);
@@ -127,8 +127,19 @@ impl Path for CubicParameterPath {
         Pose::new(x, y, heading)
     }
 
-    fn length(&self) -> f32 {
-        // TODO(@rh0820): #1 implement length calculation
-        todo!()
+    fn length_until(&self, t: f32) -> f32 {
+        // TODO(@rh0820): #1 implement length calculation using calculus
+        // for now, just using a small step size
+        let dt = 0.001;
+        let mut length = 0.0;
+        let mut last_point = self.evaluate(0.0);
+        let mut t = dt;
+        while t <= 1.0 {
+            let point = self.evaluate(t);
+            length += last_point.distance(&point);
+            last_point = point;
+            t += dt;
+        }
+        length
     }
 }

@@ -1,5 +1,8 @@
+use vexide::float::Float as _;
+
 /// A struct representing a 2D pose with x, y coordinates and a heading
 /// in radians.
+#[derive(Debug, Clone, Copy)]
 pub struct Pose {
     pub x: f32,
     pub y: f32,
@@ -37,5 +40,10 @@ impl Pose {
     /// Returns the heading of the pose in radians.
     pub fn heading(&self) -> f32 {
         self.heading
+    }
+
+    /// Returns the distance between this pose and another pose.
+    pub fn distance(&self, other: &Pose) -> f32 {
+        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
     }
 }

@@ -26,3 +26,4 @@ nalgebra = { version = "0.33.2", default-features = false, features = [
     "alloc",
     "libm",
 ] }
+zune-bmp = "0.4.0"
