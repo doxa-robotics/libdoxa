@@ -23,6 +23,8 @@ pub trait Path {
                 closest_t = t;
             }
             // Seems to not work
+            // TODO: we don't want to skip a path segment so we should check
+            // whether the last point is much farther along the path than the previous
             // if distance > last_distance {
             //     break;
             // }
