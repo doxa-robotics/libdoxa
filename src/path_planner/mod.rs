@@ -4,7 +4,7 @@ use crate::utils::pose::Pose;
 
 pub mod cubic_parametric;
 
-pub trait Path: Debug + Clone + Copy {
+pub trait Path: Debug {
     fn length_until(&self, t: f32) -> f32;
     fn evaluate(&self, t: f32) -> Pose;
 
@@ -19,7 +19,7 @@ pub trait Path: Debug + Clone + Copy {
         // let mut last_distance = self.evaluate(t).distance(&pose);
         while t <= 1.0 {
             let current_point = self.evaluate(t);
-            let distance = current_point.distance(&pose);
+            let distance = current_point.distance(pose);
             if (distance - radius).abs() < closest_distance {
                 closest_distance = (distance - radius).abs();
                 closest_t = t;
@@ -44,11 +44,11 @@ pub trait Path: Debug + Clone + Copy {
         let mut t = initial_t.unwrap_or(0.0);
         let mut closest_t = t;
         let mut closest_distance = f32::MAX;
-        let mut last_distance = self.evaluate(t).distance(&pose);
+        let mut last_distance = self.evaluate(t).distance(pose);
         let overshoot = overshoot.unwrap_or(0.0);
         while t <= 1.0 + overshoot {
             let current_point = self.evaluate(t);
-            let distance = current_point.distance(&pose);
+            let distance = current_point.distance(pose);
             if distance < closest_distance {
                 closest_distance = distance;
                 closest_t = t;
@@ -63,7 +63,7 @@ pub trait Path: Debug + Clone + Copy {
         t = initial_t.unwrap_or(0.0);
         while t >= 0.0 - overshoot {
             let current_point = self.evaluate(t);
-            let distance = current_point.distance(&pose);
+            let distance = current_point.distance(pose);
             if distance < closest_distance {
                 closest_distance = distance;
                 closest_t = t;

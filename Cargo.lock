@@ -55,6 +55,7 @@ dependencies = [
  "nalgebra",
  "pid",
  "snafu",
+ "vex-sdk",
  "vexide",
  "vexide-motorgroup",
  "zune-bmp",

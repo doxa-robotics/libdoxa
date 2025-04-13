@@ -53,7 +53,21 @@ impl Pose {
     }
 
     /// Returns the distance between this pose and another pose.
-    pub fn distance(&self, other: &Pose) -> f32 {
+    pub fn distance(&self, other: Pose) -> f32 {
         ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
+    }
+
+    /// Returns the angle between this pose and another pose in radians.
+    pub fn angle_to(&self, other: Pose) -> f32 {
+        (other.y - self.y).atan2(other.x - self.x) - self.heading
+    }
+}
+
+impl From<Pose> for vexide::devices::math::Point2<i16> {
+    fn from(pose: Pose) -> vexide::devices::math::Point2<i16> {
+        vexide::devices::math::Point2 {
+            x: pose.x as i16,
+            y: pose.y as i16,
+        }
     }
 }

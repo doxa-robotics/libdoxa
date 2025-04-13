@@ -10,6 +10,7 @@ icon = "cool-x"
 compress = true
 
 [dependencies]
+vex-sdk = "0.26.0"
 vexide = { version = "0.7.0", default-features = false, features = [
     "devices",
     "core",

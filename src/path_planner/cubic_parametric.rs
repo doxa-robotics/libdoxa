@@ -135,14 +135,14 @@ impl Path for CubicParametricPath {
         if max_t >= 0.0 {
             while t <= max_t {
                 let point = self.evaluate(t);
-                length += last_point.distance(&point);
+                length += last_point.distance(point);
                 last_point = point;
                 t += dt;
             }
         } else {
             while t >= max_t {
                 let point = self.evaluate(t);
-                length -= last_point.distance(&point);
+                length -= last_point.distance(point);
                 last_point = point;
                 t -= dt;
             }
