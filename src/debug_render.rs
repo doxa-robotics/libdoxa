@@ -5,7 +5,6 @@ use vexide::{
         display::{self, Rect},
         math::Point2,
     },
-    io::println,
     prelude::Rgb,
 };
 
