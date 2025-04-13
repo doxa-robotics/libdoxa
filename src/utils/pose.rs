@@ -2,7 +2,7 @@ use vexide::float::Float as _;
 
 /// A struct representing a 2D pose with x, y coordinates and a heading
 /// in radians.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Pose {
     pub x: f32,
     pub y: f32,

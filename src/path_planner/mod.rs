@@ -2,6 +2,7 @@ use core::fmt::Debug;
 
 use crate::utils::pose::Pose;
 
+pub mod compound;
 pub mod cubic_parametric;
 
 pub trait Path: Debug {
