@@ -59,7 +59,7 @@ impl Pose {
 
     /// Returns the angle between this pose and another pose in radians.
     pub fn angle_to(&self, other: Pose) -> f32 {
-        (other.y - self.y).atan2(other.x - self.x) - self.heading
+        (other.y - self.y).atan2(other.x - self.x)
     }
 }
 

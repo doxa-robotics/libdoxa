@@ -13,7 +13,7 @@ pub trait Path: Debug {
         self.length_until(1.0)
     }
     fn point_on_radius(&self, pose: Pose, radius: f32, initial_t: Option<f32>) -> Option<f32> {
-        let dt = 0.01;
+        let dt = 0.001;
         let mut t = initial_t.unwrap_or(0.0);
         let mut closest_t = t;
         let mut closest_distance = f32::MAX;
@@ -37,6 +37,12 @@ pub trait Path: Debug {
         if closest_distance < 3.0 {
             Some(closest_t)
         } else {
+            log::error!(
+                "No point on path found within radius {} of pose {:?}. Closest point was {} away",
+                radius,
+                pose,
+                closest_distance
+            );
             None
         }
     }

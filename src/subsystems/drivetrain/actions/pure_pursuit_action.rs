@@ -1,3 +1,5 @@
+use core::f32::consts::PI;
+
 use pid::Pid;
 use vexide::time::Instant;
 
@@ -22,6 +24,8 @@ pub struct PurePursuitAction<T: Path> {
     settled: bool,
     end_pose: Pose,
     max_voltage: f64,
+    final_seeking: bool,
+    seeking_pid: Pid<f64>,
 }
 
 impl<T: Path> PurePursuitAction<T> {
@@ -29,25 +33,29 @@ impl<T: Path> PurePursuitAction<T> {
         path: T,
         rotational_pid: Pid<f64>,
         mut linear_pid: Pid<f64>,
+        seeking_pid: Pid<f64>,
         linear_tolerances: Tolerances,
         lookahead: f32,
         max_voltage: f64,
     ) -> Self {
-        linear_pid.setpoint(0.0);
+        let path_total = path.length();
+        linear_pid.setpoint(path_total as f64);
         Self {
             end_pose: path.evaluate(1.0),
-            path_total: path.length(),
+            path_total,
+            target_point: path.evaluate(0.0),
             path,
             rotational_pid,
             linear_pid,
+            seeking_pid,
             linear_tolerances,
             last_t: 0.0,
             last_path_distance: 0.0,
-            target_point: Pose::default(),
             lookahead,
             last_update: None,
             settled: false,
             max_voltage,
+            final_seeking: false,
         }
     }
 }
@@ -65,18 +73,69 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             context.offset.y as f32,
             context.heading as f32,
         );
-        // Find the closest point on the path to the current pose
-        let current_t = self
-            .path
-            .closest_point(current_pose, Some(self.last_t), Some(0.1));
-        if current_t != self.last_t {
-            self.last_update = Some(Instant::now());
-        }
-        // Find how far along the path we are
-        let path_distance = self.path.length_until(current_t);
-        // Calculate the distance and velocity to the end of the path
-        let error = self.path_total - path_distance;
-        let velocity = (path_distance - self.last_path_distance)
+        if self.final_seeking {
+            let distance = self.target_point.distance(current_pose);
+            if distance > self.lookahead {
+                self.final_seeking = false;
+            }
+            self.linear_pid.setpoint(distance as f64);
+            let mut linear_voltage = self.linear_pid.next_control_output(distance as f64).output;
+            let mut angle_to_target = current_pose.angle_to(self.end_pose);
+            log::debug!("angle_to_target: {}", angle_to_target);
+            // Adjust angle_to_target to be closest to the current_pose.heading()
+            while angle_to_target - current_pose.heading() > PI {
+                angle_to_target -= 2.0 * PI;
+            }
+            while angle_to_target - current_pose.heading() < -PI {
+                angle_to_target += 2.0 * PI;
+            }
+            if angle_to_target - current_pose.heading() > PI / 2.0 {
+                angle_to_target -= PI;
+                linear_voltage = -linear_voltage;
+            } else if angle_to_target - current_pose.heading() < -PI / 2.0 {
+                angle_to_target += PI;
+                linear_voltage = -linear_voltage;
+            }
+            while angle_to_target - current_pose.heading() > PI {
+                angle_to_target -= 2.0 * PI;
+            }
+            while angle_to_target - current_pose.heading() < -PI {
+                angle_to_target += 2.0 * PI;
+            }
+            self.seeking_pid.setpoint(angle_to_target);
+            let rotational_voltage = self
+                .seeking_pid
+                .next_control_output(current_pose.heading() as f64)
+                .output;
+            // If we are within the tolerances, we are settled
+            if self
+                .linear_tolerances
+                .check(distance as f64, linear_voltage)
+            {
+                self.settled = true;
+                return None;
+            }
+            // If we are not settled, we need to return the voltage
+            Some(
+                VoltagePair {
+                    left: linear_voltage - rotational_voltage,
+                    right: linear_voltage + rotational_voltage,
+                }
+                .max_voltage(self.max_voltage),
+            )
+        } else {
+            // Find the closest point on the path to the current pose
+            let current_t = self
+                .path
+                .closest_point(current_pose, Some(self.last_t), Some(0.1));
+            if current_t != self.last_t {
+                self.last_update = Some(Instant::now());
+            }
+            // Find how far along the path we are
+            let path_distance = self.path.length_until(current_t);
+            // Calculate the distance and velocity to the end of the path
+            let error = self.path_total - path_distance;
+            let velocity = (path_distance - self.last_path_distance)
             / self
                 .last_update
                 .unwrap_or(Instant::now())
@@ -84,56 +143,79 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                 .as_secs_f32()
             // Avoid division by zero
             + 0.0001;
-        // Are we there yet?
-        if self.linear_tolerances.check(error as f64, velocity as f64) {
-            self.settled = true;
-            return None;
-        }
-        self.last_path_distance = path_distance;
-        self.last_t = current_t;
-
-        // Calculate the linear part of the differential drive
-        // We simply use a PID controller while plugging in the error along the path
-        let linear_voltage = self.linear_pid.next_control_output(error as f64).output;
-
-        // Calculate the rotational part of the differential drive
-        // With pure pursuit, we find the intersection of the path and a circle
-        // with radius equal to the lookahead distance
-        // Calculate the angle to the target point
-        if let Some(target_t) =
-            self.path
-                .point_on_radius(current_pose, self.lookahead, Some(current_t))
-        {
-            self.target_point = self.path.evaluate(target_t);
-        } else if self.target_point.distance(current_pose) <= self.lookahead {
-            // If we can't find a target point but we're within the lookahead
-            // distance, we can just use the end of the path
-            self.target_point = self.end_pose;
-        } else {
-            // We can't find a target point and we've strayed too far from the path
-            // Just use the last target point
-        }
-        // Calculate the angle to the target point
-        let angle_to_target = current_pose.angle_to(self.target_point) + current_pose.heading();
-
-        self.rotational_pid.setpoint(angle_to_target as f64);
-        let rotational_voltage = self
-            .rotational_pid
-            .next_control_output(current_pose.heading() as f64)
-            .output;
-
-        log::debug!(
-            "Calculated voltages - Left: {}, Right: {}",
-            linear_voltage - rotational_voltage,
-            linear_voltage + rotational_voltage
-        );
-
-        Some(
-            VoltagePair {
-                left: linear_voltage - rotational_voltage,
-                right: linear_voltage + rotational_voltage,
+            // Are we there yet?
+            if self.linear_tolerances.check(error as f64, velocity as f64) {
+                self.settled = true;
+                return None;
             }
-            .max_voltage(self.max_voltage),
-        )
+            self.last_path_distance = path_distance;
+            self.last_t = current_t;
+
+            // Calculate the linear part of the differential drive
+            // We simply use a PID controller while plugging in the error along the path
+            let mut linear_voltage = self
+                .linear_pid
+                .next_control_output(path_distance as f64)
+                .output;
+
+            // Calculate the rotational part of the differential drive
+            // With pure pursuit, we find the intersection of the path and a circle
+            // with radius equal to the lookahead distance
+            // Calculate the angle to the target point
+            if let Some(target_t) =
+                self.path
+                    .point_on_radius(current_pose, self.lookahead, Some(current_t))
+            {
+                self.target_point = self.path.evaluate(target_t);
+                // SAFETY: This is not safe.
+                let mut display = unsafe { vexide::devices::display::Display::new() };
+                let shape = vexide::devices::display::Circle::new(
+                    vexide::devices::math::Point2 {
+                        x: (self.target_point.x * 0.066666667 + 120.0) as i16,
+                        y: (120.0 - self.target_point.y * 0.066666667) as i16,
+                    },
+                    1,
+                );
+                display.fill(&shape, (0, 255, 0));
+            } else if self.target_point.distance(current_pose) <= self.lookahead {
+                // If we can't find a target point but we're within the lookahead
+                // distance, we can just use the end of the path
+                self.final_seeking = true;
+            } else {
+                // We can't find a target point and we've strayed too far from the path
+                // Just use the last target point
+            }
+            // Calculate the angle to the target point
+            let mut angle_to_target = current_pose.angle_to(self.target_point);
+            // Adjust angle_to_target to be closest to the current_pose.heading()
+            while angle_to_target - current_pose.heading() > PI {
+                angle_to_target -= 2.0 * PI;
+            }
+            while angle_to_target - current_pose.heading() < -PI {
+                angle_to_target += 2.0 * PI;
+            }
+
+            if angle_to_target - current_pose.heading() > PI / 2.0 {
+                angle_to_target -= PI;
+                linear_voltage = -linear_voltage;
+            } else if angle_to_target - current_pose.heading() < -PI / 2.0 {
+                angle_to_target += PI;
+                linear_voltage = -linear_voltage;
+            }
+
+            self.rotational_pid.setpoint(angle_to_target as f64);
+            let rotational_voltage = self
+                .rotational_pid
+                .next_control_output(current_pose.heading() as f64)
+                .output;
+
+            Some(
+                VoltagePair {
+                    left: linear_voltage - rotational_voltage,
+                    right: linear_voltage + rotational_voltage,
+                }
+                .max_voltage(self.max_voltage),
+            )
+        }
     }
 }

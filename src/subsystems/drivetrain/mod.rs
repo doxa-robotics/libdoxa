@@ -30,13 +30,13 @@ impl VoltagePair {
     /// voltage
     #[must_use = "does not mutate original value"]
     pub fn max_voltage(self, max_voltage: f64) -> Self {
-        if self.left <= -max_voltage && self.right <= max_voltage {
+        if self.left.abs() <= max_voltage && self.right.abs() <= max_voltage {
             self
         } else {
-            let ratio = if self.left >= self.right {
-                max_voltage / self.left
+            let ratio = if self.left.abs() >= self.right.abs() {
+                max_voltage / self.left.abs()
             } else {
-                max_voltage / self.right
+                max_voltage / self.right.abs()
             };
             VoltagePair {
                 left: self.left * ratio,
@@ -70,11 +70,11 @@ impl Drivetrain {
                 loop {
                     let mut action_owned = action.borrow_mut();
                     if let Some(ref mut action_ref) = *action_owned {
-                        let position = tracking.position();
+                        let position = tracking.context();
                         let mut left = left.borrow_mut();
                         let mut right = right.borrow_mut();
                         let context = actions::ActionContext {
-                            offset: position,
+                            offset: position.offset,
                             left_offset: left
                                 .position()
                                 .map(|x| x.as_revolutions() * wheel_circumference)
@@ -85,7 +85,7 @@ impl Drivetrain {
                                 .unwrap_or(0.0),
                             left_velocity: left.velocity().unwrap_or(0.0) * wheel_circumference,
                             right_velocity: right.velocity().unwrap_or(0.0) * wheel_circumference,
-                            heading: heading_sensor.heading(),
+                            heading: position.heading,
                         };
                         if let Some(voltage) = action_ref.update(context) {
                             if let Err(e) = left.set_voltage(voltage.left) {

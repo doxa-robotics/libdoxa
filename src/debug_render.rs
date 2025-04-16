@@ -113,11 +113,11 @@ impl DebugRender {
                     &display::Line::new(
                         Point2 {
                             x: (last_point.x * self.field_scale) as i16 + self.field_origin.x,
-                            y: (last_point.y * self.field_scale) as i16 + self.field_origin.y,
+                            y: self.field_origin.y - (last_point.y * self.field_scale) as i16,
                         },
                         Point2 {
                             x: (current_point.x * self.field_scale) as i16 + self.field_origin.x,
-                            y: (current_point.y * self.field_scale) as i16 + self.field_origin.y,
+                            y: self.field_origin.y - (current_point.y * self.field_scale) as i16,
                         },
                     ),
                     color,
@@ -133,7 +133,7 @@ impl DebugRender {
                 &display::Circle::new(
                     Point2 {
                         x: (mark.x as f32 * self.field_scale) as i16 + self.field_origin.x,
-                        y: (mark.y as f32 * self.field_scale) as i16 + self.field_origin.y,
+                        y: self.field_origin.y - (mark.y as f32 * self.field_scale) as i16,
                     },
                     mark.size,
                 ),
@@ -150,7 +150,7 @@ impl DebugRender {
     ) {
         func(&mut self.display, &|point| Point2 {
             x: (point.x as f32 * self.field_scale) as i16 + self.field_origin.x,
-            y: (point.y as f32 * self.field_scale) as i16 + self.field_origin.y,
+            y: self.field_origin.y - (point.y as f32 * self.field_scale) as i16,
         });
     }
 }

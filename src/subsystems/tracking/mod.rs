@@ -1,4 +1,7 @@
-use core::cell::RefCell;
+use core::{
+    cell::RefCell,
+    f64::{self, consts::PI},
+};
 
 use alloc::{rc::Rc, vec::Vec};
 use vexide::prelude::{RotationSensor, SmartDevice};
@@ -10,9 +13,15 @@ use crate::utils::{
 
 pub mod wheel;
 
+#[derive(Debug, Clone, Copy)]
+pub struct TrackingContext {
+    pub offset: Vec2<f64>,
+    pub heading: f64,
+}
+
 #[derive(Debug)]
 pub struct TrackingSubsystem {
-    offset: Rc<RefCell<Vec2<f64>>>,
+    context: Rc<RefCell<TrackingContext>>,
     _task: vexide::task::Task<()>,
 }
 
@@ -22,6 +31,7 @@ impl TrackingSubsystem {
         parallel_tracking_wheels: impl IntoIterator<Item = wheel::TrackingWheel<LT>>,
         heading_sensor: HT,
         initial_offset: Vec2<f64>,
+        initial_heading: f64,
     ) -> Self {
         let mut perpendicular_tracking_wheels = perpendicular_tracking_wheels
             .into_iter()
@@ -29,13 +39,16 @@ impl TrackingSubsystem {
         let mut parallel_tracking_wheels = parallel_tracking_wheels
             .into_iter()
             .collect::<Vec<wheel::TrackingWheel<LT>>>();
-        let offset = Rc::new(RefCell::new(initial_offset));
+        let context = Rc::new(RefCell::new(TrackingContext {
+            offset: initial_offset,
+            heading: initial_heading,
+        }));
         Self {
-            offset: offset.clone(),
+            context: context.clone(),
             _task: vexide::task::spawn(async move {
-                let mut last_heading = heading_sensor.heading();
+                let mut last_heading = initial_heading - heading_sensor.heading();
                 loop {
-                    let heading = heading_sensor.heading();
+                    let heading = initial_heading - heading_sensor.heading();
                     let heading_delta = heading - last_heading;
                     last_heading = heading;
                     let average_heading = (heading + last_heading) / 2.0;
@@ -49,13 +62,17 @@ impl TrackingSubsystem {
                             .map(|wheel| wheel.local_delta(heading_delta))
                             .sum::<Vec2<_>>())
                         / parallel_tracking_wheels.len() as f64;
-                    *offset.borrow_mut() += average_displacement.rotated(average_heading);
+                    {
+                        let mut context = context.borrow_mut();
+                        context.offset += average_displacement.rotated(average_heading - PI / 2.0);
+                        context.heading = average_heading;
+                    }
                     // SAFETY: This is not safe.
                     let mut display = unsafe { vexide::devices::display::Display::new() };
                     let shape = vexide::devices::display::Circle::new(
                         vexide::devices::math::Point2 {
-                            x: (offset.borrow().x / 10.0 + 100.0) as i16,
-                            y: (offset.borrow().y / 10.0 + 100.0) as i16,
+                            x: (context.borrow().offset.x * 0.066666667 + 120.0) as i16,
+                            y: (120.0 - context.borrow().offset.y * 0.066666667) as i16,
                         },
                         1,
                     );
@@ -66,7 +83,7 @@ impl TrackingSubsystem {
         }
     }
 
-    pub fn position(&self) -> Vec2<f64> {
-        *self.offset.borrow()
+    pub fn context(&self) -> TrackingContext {
+        *self.context.borrow()
     }
 }
