@@ -1,7 +1,6 @@
 use core::f64::consts::PI;
 
 use pid::Pid;
-use vexide::time::Instant;
 
 use crate::{
     path_planner::Path,
@@ -20,7 +19,6 @@ pub struct PurePursuitAction<T: Path> {
     last_path_distance: f64,
     target_point: Pose,
     lookahead: f64,
-    last_update: Option<Instant>,
     settled: bool,
     end_pose: Pose,
     max_voltage: f64,
@@ -52,7 +50,6 @@ impl<T: Path> PurePursuitAction<T> {
             last_t: 0.0,
             last_path_distance: 0.0,
             lookahead,
-            last_update: None,
             settled: false,
             max_voltage,
             final_seeking: false,
@@ -102,8 +99,9 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                 .seeking_pid
                 .next_control_output(context.pose.heading())
                 .output;
+            let velocity = (context.left_velocity + context.right_velocity) / 2.0;
             // If we are within the tolerances, we are settled
-            if self.linear_tolerances.check(distance, linear_voltage) {
+            if self.linear_tolerances.check(distance, velocity) {
                 self.settled = true;
                 return None;
             }
@@ -120,21 +118,11 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             let current_t = self
                 .path
                 .closest_point(context.pose, Some(self.last_t), Some(0.1));
-            if current_t != self.last_t {
-                self.last_update = Some(Instant::now());
-            }
             // Find how far along the path we are
             let path_distance = self.path.length_until(current_t);
             // Calculate the distance and velocity to the end of the path
             let error = self.path_total - path_distance;
-            let velocity = (path_distance - self.last_path_distance)
-            / self
-                .last_update
-                .unwrap_or(Instant::now())
-                .elapsed()
-                .as_secs_f64()
-            // Avoid division by zero
-            + 0.0001;
+            let velocity = (context.left_velocity + context.right_velocity) / 2.0;
             // Are we there yet?
             if self.linear_tolerances.check(error, velocity) {
                 self.settled = true;

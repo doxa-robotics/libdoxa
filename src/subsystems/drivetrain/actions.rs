@@ -2,8 +2,10 @@ use core::fmt::Debug;
 
 use crate::utils::pose::Pose;
 
+mod boomerang;
 mod drive_to_point;
 mod forward;
+mod lazy;
 mod pure_pursuit;
 mod rotation;
 mod turn_to_point;
@@ -28,8 +30,10 @@ pub struct ActionContext {
     pub right_velocity: f64,
 }
 
+pub use boomerang::BoomerangAction;
 pub use drive_to_point::DriveToPointAction;
 pub use forward::ForwardAction;
+pub use lazy::LazyAction;
 pub use pure_pursuit::PurePursuitAction;
 pub use rotation::RotationAction;
 pub use turn_to_point::TurnToPointAction;
