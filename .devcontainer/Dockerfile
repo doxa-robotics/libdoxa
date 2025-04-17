@@ -1,9 +1,5 @@
 FROM ubuntu:22.04
 
-WORKDIR /home/
-
-COPY . .
-
-RUN bash ./setup.sh
-
+COPY ./.devcontainer/setup.sh /tmp/scripts/setup.sh
+RUN apt-get update && bash /tmp/scripts/setup.sh
 ENV PATH="/root/.cargo/bin:$PATH"
