@@ -49,6 +49,7 @@ impl VoltagePair {
 pub struct Drivetrain {
     action: Rc<RefCell<Option<Box<dyn actions::Action>>>>,
     action_finish_barrier: Rc<RefCell<Option<vexide::sync::Barrier>>>,
+    max_voltage: Rc<RefCell<f64>>,
     _task: vexide::task::Task<()>,
 }
 
@@ -58,13 +59,16 @@ impl Drivetrain {
         left: Rc<RefCell<MotorGroup>>,
         right: Rc<RefCell<MotorGroup>>,
         wheel_circumference: f64,
+        max_voltage: f64,
         tracking: TrackingSubsystem,
     ) -> Self {
         let action = Rc::new(RefCell::new(None));
         let action_finish_barrier = Rc::new(RefCell::new(None));
+        let max_voltage = Rc::new(RefCell::new(max_voltage));
         Drivetrain {
             action: action.clone(),
             action_finish_barrier: action_finish_barrier.clone(),
+            max_voltage: max_voltage.clone(),
             _task: vexide::task::spawn(async move {
                 loop {
                     let mut action_owned = action.borrow_mut();
@@ -86,6 +90,7 @@ impl Drivetrain {
                             pose: position,
                         };
                         if let Some(voltage) = action_ref.update(context) {
+                            let voltage = voltage.max_voltage(*max_voltage.borrow());
                             if let Err(e) = left.set_voltage(voltage.left) {
                                 log::error!("Failed to set left voltage: {:?}", e);
                             }
@@ -116,6 +121,11 @@ impl Drivetrain {
     pub fn set_voltage(&mut self, voltage: VoltagePair) {
         let mut action = self.action.borrow_mut();
         *action = Some(Box::new(actions::VoltageAction { voltage }));
+    }
+
+    pub fn set_max_voltage(&mut self, max_voltage: f64) {
+        let mut max_voltage_ref = self.max_voltage.borrow_mut();
+        *max_voltage_ref = max_voltage;
     }
 
     pub async fn boxed_action(&mut self, new_action: Box<dyn actions::Action>) {
