@@ -28,3 +28,7 @@ nalgebra = { version = "0.33.2", default-features = false, features = [
     "libm",
 ] }
 zune-bmp = "0.4.0"
+
+[features]
+default = []
+unsafe_debug_render = []

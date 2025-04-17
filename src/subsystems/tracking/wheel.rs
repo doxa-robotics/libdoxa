@@ -1,9 +1,10 @@
 use core::{error::Error, f64, fmt::Debug};
 
+use nalgebra::Vector2;
 use snafu::Snafu;
 use vexide::{float::Float, prelude::Position};
 
-use crate::utils::{traits::HasRotation, vec2::Vec2};
+use crate::utils::traits::HasRotation;
 
 #[derive(Debug, Snafu)]
 pub enum TrackingWheelError<T: Debug + Error + 'static> {
@@ -85,13 +86,13 @@ impl<T: HasRotation> TrackingWheel<T> {
     ///
     /// The frame of reference for the local delta is the y axis facing
     /// in the direction of forward travel.
-    pub fn local_delta(&mut self, heading_delta: f64) -> Vec2<f64> {
+    pub fn local_delta(&mut self, heading_delta: f64) -> Vector2<f64> {
         match self.mounting_direction {
             TrackingWheelMountingDirection::Parallel => {
                 if heading_delta == 0.0 {
-                    Vec2::new(0.0, self.delta())
+                    Vector2::new(0.0, self.delta())
                 } else {
-                    Vec2::new(
+                    Vector2::new(
                         0.0,
                         2.0 * (heading_delta / 2.0).sin()
                             * (self.delta() / heading_delta + self.mounting_offset()),
@@ -100,9 +101,9 @@ impl<T: HasRotation> TrackingWheel<T> {
             }
             TrackingWheelMountingDirection::Perpendicular => {
                 if heading_delta == 0.0 {
-                    Vec2::new(self.delta(), 0.0)
+                    Vector2::new(self.delta(), 0.0)
                 } else {
-                    Vec2::new(
+                    Vector2::new(
                         2.0 * (heading_delta / 2.0).sin()
                             * (self.delta() / heading_delta + self.mounting_offset()),
                         0.0,

@@ -1,4 +1,4 @@
-use crate::utils::{settling, vec2::Vec2};
+use crate::utils::{pose::Pose, settling};
 
 use super::RotationAction;
 
@@ -8,18 +8,14 @@ use super::RotationAction;
 /// setpoint is not needed, as the target point is used as the setpoint.
 #[derive(Debug)]
 pub struct TurnToPointAction {
-    target: Vec2<f64>,
+    target: Pose,
     controller: pid::Pid<f64>,
     tolerances: settling::Tolerances,
     action: Option<RotationAction>,
 }
 
 impl TurnToPointAction {
-    pub fn new(
-        target: Vec2<f64>,
-        controller: pid::Pid<f64>,
-        tolerances: settling::Tolerances,
-    ) -> Self {
+    pub fn new(target: Pose, controller: pid::Pid<f64>, tolerances: settling::Tolerances) -> Self {
         Self {
             target,
             controller,
@@ -35,7 +31,7 @@ impl super::Action for TurnToPointAction {
         context: super::ActionContext,
     ) -> Option<crate::subsystems::drivetrain::VoltagePair> {
         if self.action.is_none() {
-            let target_heading = (self.target - context.offset).angle();
+            let target_heading = context.pose.angle_to(self.target);
             self.controller.setpoint = target_heading;
             self.action = Some(RotationAction::new(self.controller, self.tolerances));
         }

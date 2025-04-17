@@ -1,14 +1,16 @@
 use super::{forward::ForwardAction, turn_to_point::TurnToPointAction, Action, ActionContext};
 use crate::subsystems::drivetrain::VoltagePair;
-use crate::utils::{settling, vec2::Vec2};
+use crate::utils::pose::Pose;
+use crate::utils::settling;
 
 /// An action that drives the robot to a specific point.
 ///
 /// This action first turns the robot to face the target point, and then drives
-/// forward to reach the target point.
+/// forward to reach the target point. This does not take into account the
+/// heading of the target pose.
 #[derive(Debug)]
 pub struct DriveToPointAction {
-    target: Vec2<f64>,
+    target: Pose,
     state: DriveToPointState,
     turn_controller: pid::Pid<f64>,
     forward_controller: pid::Pid<f64>,
@@ -26,7 +28,7 @@ enum DriveToPointState {
 
 impl DriveToPointAction {
     pub fn new(
-        target: Vec2<f64>,
+        target: Pose,
         turn_controller: pid::Pid<f64>,
         forward_controller: pid::Pid<f64>,
         turn_tolerances: settling::Tolerances,
@@ -48,7 +50,7 @@ impl Action for DriveToPointAction {
         match &mut self.state {
             DriveToPointState::NotStarted => {
                 // Transition to the turning state
-                let target_heading = (self.target - context.offset).angle();
+                let target_heading = context.pose.angle_to(self.target);
                 self.turn_controller.setpoint = target_heading;
                 self.state = DriveToPointState::Turning(TurnToPointAction::new(
                     self.target,
@@ -62,7 +64,7 @@ impl Action for DriveToPointAction {
                     return Some(voltage);
                 }
                 // Transition to driving action
-                self.forward_controller.setpoint = self.target.distance(context.offset);
+                self.forward_controller.setpoint = self.target.distance(context.pose);
                 log::debug!(
                     "DriveToPointAction: Forward setpoint: {}",
                     self.forward_controller.setpoint

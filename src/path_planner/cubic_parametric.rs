@@ -98,12 +98,12 @@ impl CubicParametricPath {
             display.fill(
                 &vexide::devices::display::Line::new(
                     vexide::devices::math::Point2 {
-                        x: (last_point.x) as i16,
-                        y: (last_point.y) as i16,
+                        x: (last_point.x()) as i16,
+                        y: (last_point.y()) as i16,
                     },
                     vexide::devices::math::Point2 {
-                        x: (point.x) as i16,
-                        y: (point.y) as i16,
+                        x: (point.x()) as i16,
+                        y: (point.y()) as i16,
                     },
                 ),
                 (255, 255, 255),

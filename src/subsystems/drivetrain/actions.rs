@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use crate::utils::vec2::Vec2;
+use crate::utils::pose::Pose;
 
 mod drive_to_point;
 mod forward;
@@ -21,9 +21,7 @@ pub trait Action: Debug {
 
 #[derive(Debug, Clone, Copy)]
 pub struct ActionContext {
-    // TODO(@zabackary): switch tracking context to use `Pose`
-    pub offset: Vec2<f64>,
-    pub heading: f64,
+    pub pose: Pose,
     pub left_offset: f64,
     pub right_offset: f64,
     pub left_velocity: f64,

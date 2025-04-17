@@ -112,12 +112,12 @@ impl DebugRender {
                 self.display.fill(
                     &display::Line::new(
                         Point2 {
-                            x: (last_point.x * self.field_scale) as i16 + self.field_origin.x,
-                            y: self.field_origin.y - (last_point.y * self.field_scale) as i16,
+                            x: (last_point.x() * self.field_scale) as i16 + self.field_origin.x,
+                            y: self.field_origin.y - (last_point.y() * self.field_scale) as i16,
                         },
                         Point2 {
-                            x: (current_point.x * self.field_scale) as i16 + self.field_origin.x,
-                            y: self.field_origin.y - (current_point.y * self.field_scale) as i16,
+                            x: (current_point.x() * self.field_scale) as i16 + self.field_origin.x,
+                            y: self.field_origin.y - (current_point.y() * self.field_scale) as i16,
                         },
                     ),
                     color,

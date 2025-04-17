@@ -39,7 +39,7 @@ impl super::Action for RotationAction {
     ) -> Option<crate::subsystems::drivetrain::VoltagePair> {
         if !self.initialized {
             // Normalize the setpoint to the closest direct angle to the current position
-            let mut error = self.controller.setpoint - context.heading;
+            let mut error = self.controller.setpoint - context.pose.heading();
             while error > PI {
                 self.controller.setpoint -= 2.0 * PI;
                 error -= 2.0 * PI;
@@ -51,7 +51,7 @@ impl super::Action for RotationAction {
             self.initialized = true; // Mark as initialized
         }
 
-        let error = self.controller.setpoint - context.heading;
+        let error = self.controller.setpoint - context.pose.heading();
 
         if self
             .tolerances
@@ -60,14 +60,17 @@ impl super::Action for RotationAction {
             return None;
         }
 
-        let output = self.controller.next_control_output(context.heading).output;
+        let output = self
+            .controller
+            .next_control_output(context.pose.heading())
+            .output;
 
         log::debug!(
             "Control output: {:.2?} Error: {:.2?} Setpoint: {:.2?} heading: {:.2?}",
             output,
             error,
             self.controller.setpoint,
-            context.heading
+            context.pose.heading()
         );
 
         // Apply the output as a voltage pair for rotation

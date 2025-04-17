@@ -57,7 +57,6 @@ impl Drivetrain {
     pub fn new<HT: HasHeading + 'static>(
         left: Rc<RefCell<MotorGroup>>,
         right: Rc<RefCell<MotorGroup>>,
-        heading_sensor: HT,
         wheel_circumference: f64,
         tracking: TrackingSubsystem,
     ) -> Self {
@@ -74,7 +73,6 @@ impl Drivetrain {
                         let mut left = left.borrow_mut();
                         let mut right = right.borrow_mut();
                         let context = actions::ActionContext {
-                            offset: position.offset,
                             left_offset: left
                                 .position()
                                 .map(|x| x.as_revolutions() * wheel_circumference)
@@ -85,7 +83,7 @@ impl Drivetrain {
                                 .unwrap_or(0.0),
                             left_velocity: left.velocity().unwrap_or(0.0) * wheel_circumference,
                             right_velocity: right.velocity().unwrap_or(0.0) * wheel_circumference,
-                            heading: position.heading,
+                            pose: position,
                         };
                         if let Some(voltage) = action_ref.update(context) {
                             if let Err(e) = left.set_voltage(voltage.left) {

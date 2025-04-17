@@ -65,7 +65,7 @@ impl super::Action for ForwardAction {
             output,
             error,
             self.controller.setpoint,
-            context.heading
+            context.pose.heading()
         );
 
         Some(output.into())
