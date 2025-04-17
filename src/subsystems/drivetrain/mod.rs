@@ -4,8 +4,6 @@ use alloc::{boxed::Box, rc::Rc};
 use vexide::sync::Barrier;
 use vexide_motorgroup::MotorGroup;
 
-use crate::utils::traits::HasHeading;
-
 use super::tracking::TrackingSubsystem;
 
 pub mod actions;
@@ -55,7 +53,7 @@ pub struct Drivetrain {
 
 #[allow(clippy::await_holding_refcell_ref)]
 impl Drivetrain {
-    pub fn new<HT: HasHeading + 'static>(
+    pub fn new(
         left: Rc<RefCell<MotorGroup>>,
         right: Rc<RefCell<MotorGroup>>,
         wheel_circumference: f64,
