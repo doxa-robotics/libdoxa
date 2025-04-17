@@ -4,11 +4,11 @@ use vexide::float::Float as _;
 /// in radians.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Pose {
-    pub x: f32,
-    pub y: f32,
+    pub x: f64,
+    pub y: f64,
     /// Heading in radians
     /// 0 is facing right, pi/2 is facing up, pi is facing left, and -pi/2 is facing down
-    pub heading: f32,
+    pub heading: f64,
 }
 
 impl Default for Pose {
@@ -21,8 +21,8 @@ impl Default for Pose {
     }
 }
 
-impl From<(f32, f32, f32)> for Pose {
-    fn from(coords: (f32, f32, f32)) -> Self {
+impl From<(f64, f64, f64)> for Pose {
+    fn from(coords: (f64, f64, f64)) -> Self {
         Pose {
             x: coords.0,
             y: coords.1,
@@ -33,32 +33,32 @@ impl From<(f32, f32, f32)> for Pose {
 
 impl Pose {
     /// Creates a new Pose with the given x, y coordinates and heading.
-    pub fn new(x: f32, y: f32, heading: f32) -> Self {
+    pub fn new(x: f64, y: f64, heading: f64) -> Self {
         Pose { x, y, heading }
     }
 
     /// Returns the x coordinate of the pose.
-    pub fn x(&self) -> f32 {
+    pub fn x(&self) -> f64 {
         self.x
     }
 
     /// Returns the y coordinate of the pose.
-    pub fn y(&self) -> f32 {
+    pub fn y(&self) -> f64 {
         self.y
     }
 
     /// Returns the heading of the pose in radians.
-    pub fn heading(&self) -> f32 {
+    pub fn heading(&self) -> f64 {
         self.heading
     }
 
     /// Returns the distance between this pose and another pose.
-    pub fn distance(&self, other: Pose) -> f32 {
+    pub fn distance(&self, other: Pose) -> f64 {
         ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
     }
 
     /// Returns the angle between this pose and another pose in radians.
-    pub fn angle_to(&self, other: Pose) -> f32 {
+    pub fn angle_to(&self, other: Pose) -> f64 {
         (other.y - self.y).atan2(other.x - self.x)
     }
 }

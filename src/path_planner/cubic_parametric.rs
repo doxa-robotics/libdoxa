@@ -17,7 +17,7 @@ use crate::utils::pose::Pose;
 use super::Path;
 
 #[rustfmt::skip]
-const CURVE_FITTING_MATRIX: nalgebra::Matrix4<f32> = nalgebra::Matrix4::new(
+const CURVE_FITTING_MATRIX: nalgebra::Matrix4<f64> = nalgebra::Matrix4::new(
     2.0, -2.0, 1.0, 1.0,
     -3.0, 3.0, -2.0, -1.0,
     0.0, 0.0, 1.0, 0.0,
@@ -31,30 +31,30 @@ const CURVE_FITTING_MATRIX: nalgebra::Matrix4<f32> = nalgebra::Matrix4::new(
 
 #[derive(Debug, Clone, Copy)]
 struct Cubic {
-    pub a: f32,
-    pub b: f32,
-    pub c: f32,
-    pub d: f32,
+    pub a: f64,
+    pub b: f64,
+    pub c: f64,
+    pub d: f64,
 }
 
 impl Cubic {
-    pub fn new(a: f32, b: f32, c: f32, d: f32) -> Self {
+    pub fn new(a: f64, b: f64, c: f64, d: f64) -> Self {
         Self { a, b, c, d }
     }
 
-    pub fn evaluate(&self, t: f32) -> f32 {
+    pub fn evaluate(&self, t: f64) -> f64 {
         self.a * t.powi(3) + self.b * t.powi(2) + self.c * t + self.d
     }
 
-    pub fn evaluate_derivative(&self, t: f32) -> f32 {
+    pub fn evaluate_derivative(&self, t: f64) -> f64 {
         3.0 * self.a * t.powi(2) + 2.0 * self.b * t + self.c
     }
 
     pub fn from_endpoints(
-        start: f32,
-        end: f32,
-        start_derivative: f32,
-        end_derivative: f32,
+        start: f64,
+        end: f64,
+        start_derivative: f64,
+        end_derivative: f64,
     ) -> Self {
         let vector = nalgebra::Vector4::new(start, end, start_derivative, end_derivative);
         let coeffs = CURVE_FITTING_MATRIX * vector;
@@ -72,7 +72,7 @@ impl CubicParametricPath {
     /// Creates a new CubicParameterPath with the given start and end poses
     ///
     /// easing is a value from [0.0, infinity) that determines how "curvy" the path is.
-    pub fn new(start_pose: Pose, start_easing: f32, end_pose: Pose, end_easing: f32) -> Self {
+    pub fn new(start_pose: Pose, start_easing: f64, end_pose: Pose, end_easing: f64) -> Self {
         let x = Cubic::from_endpoints(
             start_pose.x(),
             end_pose.x(),
@@ -115,7 +115,7 @@ impl CubicParametricPath {
 }
 
 impl Path for CubicParametricPath {
-    fn evaluate(&self, t: f32) -> Pose {
+    fn evaluate(&self, t: f64) -> Pose {
         let x = self.x.evaluate(t);
         let y = self.y.evaluate(t);
         let heading = self
@@ -125,7 +125,7 @@ impl Path for CubicParametricPath {
         Pose::new(x, y, heading)
     }
 
-    fn length_until(&self, max_t: f32) -> f32 {
+    fn length_until(&self, max_t: f64) -> f64 {
         // TODO(@rh0820): #1 implement length calculation using calculus
         // for now, just using a small step size
         let dt = 0.001;

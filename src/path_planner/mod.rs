@@ -6,17 +6,17 @@ pub mod compound;
 pub mod cubic_parametric;
 
 pub trait Path: Debug {
-    fn length_until(&self, t: f32) -> f32;
-    fn evaluate(&self, t: f32) -> Pose;
+    fn length_until(&self, t: f64) -> f64;
+    fn evaluate(&self, t: f64) -> Pose;
 
-    fn length(&self) -> f32 {
+    fn length(&self) -> f64 {
         self.length_until(1.0)
     }
-    fn point_on_radius(&self, pose: Pose, radius: f32, initial_t: Option<f32>) -> Option<f32> {
+    fn point_on_radius(&self, pose: Pose, radius: f64, initial_t: Option<f64>) -> Option<f64> {
         let dt = 0.001;
         let mut t = initial_t.unwrap_or(0.0);
         let mut closest_t = t;
-        let mut closest_distance = f32::MAX;
+        let mut closest_distance = f64::MAX;
         // let mut last_distance = self.evaluate(t).distance(&pose);
         while t <= 1.0 {
             let current_point = self.evaluate(t);
@@ -46,11 +46,11 @@ pub trait Path: Debug {
             None
         }
     }
-    fn closest_point(&self, pose: Pose, initial_t: Option<f32>, overshoot: Option<f32>) -> f32 {
+    fn closest_point(&self, pose: Pose, initial_t: Option<f64>, overshoot: Option<f64>) -> f64 {
         let dt = 0.01;
         let mut t = initial_t.unwrap_or(0.0);
         let mut closest_t = t;
-        let mut closest_distance = f32::MAX;
+        let mut closest_distance = f64::MAX;
         let mut last_distance = self.evaluate(t).distance(pose);
         let overshoot = overshoot.unwrap_or(0.0);
         while t <= 1.0 + overshoot {

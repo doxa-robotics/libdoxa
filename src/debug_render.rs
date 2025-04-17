@@ -34,7 +34,7 @@ pub struct DebugRender {
     field_width: i16,
     field_height: i16,
     field_origin: Point2<i16>,
-    field_scale: f32,
+    field_scale: f64,
 
     pub paths: Vec<Box<dyn Path>>,
     pub marks: Vec<DebugRenderMark>,
@@ -75,7 +75,7 @@ impl DebugRender {
                 x: width as i16 / 2,
                 y: height as i16 / 2,
             },
-            field_scale: width as f32 / (600.0 * 6.0),
+            field_scale: width as f64 / (600.0 * 6.0),
 
             paths: Vec::new(),
             marks: Vec::new(),
@@ -132,8 +132,8 @@ impl DebugRender {
             self.display.fill(
                 &display::Circle::new(
                     Point2 {
-                        x: (mark.x as f32 * self.field_scale) as i16 + self.field_origin.x,
-                        y: self.field_origin.y - (mark.y as f32 * self.field_scale) as i16,
+                        x: (mark.x as f64 * self.field_scale) as i16 + self.field_origin.x,
+                        y: self.field_origin.y - (mark.y as f64 * self.field_scale) as i16,
                     },
                     mark.size,
                 ),
@@ -149,8 +149,8 @@ impl DebugRender {
         func: impl FnOnce(&mut display::Display, &dyn Fn(Point2<i16>) -> Point2<i16>),
     ) {
         func(&mut self.display, &|point| Point2 {
-            x: (point.x as f32 * self.field_scale) as i16 + self.field_origin.x,
-            y: self.field_origin.y - (point.y as f32 * self.field_scale) as i16,
+            x: (point.x as f64 * self.field_scale) as i16 + self.field_origin.x,
+            y: self.field_origin.y - (point.y as f64 * self.field_scale) as i16,
         });
     }
 }

@@ -1,4 +1,4 @@
-use core::f32::consts::PI;
+use core::f64::consts::PI;
 
 use pid::Pid;
 use vexide::time::Instant;
@@ -12,14 +12,14 @@ use crate::{
 #[derive(Debug)]
 pub struct PurePursuitAction<T: Path> {
     path: T,
-    path_total: f32,
+    path_total: f64,
     rotational_pid: Pid<f64>,
     linear_pid: Pid<f64>,
     linear_tolerances: Tolerances,
-    last_t: f32,
-    last_path_distance: f32,
+    last_t: f64,
+    last_path_distance: f64,
     target_point: Pose,
-    lookahead: f32,
+    lookahead: f64,
     last_update: Option<Instant>,
     settled: bool,
     end_pose: Pose,
@@ -35,7 +35,7 @@ impl<T: Path> PurePursuitAction<T> {
         mut linear_pid: Pid<f64>,
         seeking_pid: Pid<f64>,
         linear_tolerances: Tolerances,
-        lookahead: f32,
+        lookahead: f64,
         max_voltage: f64,
     ) -> Self {
         let path_total = path.length();
@@ -69,9 +69,9 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
         // Convert the current pose to a Pose. This should be removed after
         // `context` is updated to use Pose directly
         let current_pose = Pose::new(
-            context.offset.x as f32,
-            context.offset.y as f32,
-            context.heading as f32,
+            context.offset.x as f64,
+            context.offset.y as f64,
+            context.heading as f64,
         );
         if self.final_seeking {
             let distance = self.target_point.distance(current_pose);
@@ -140,7 +140,7 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                 .last_update
                 .unwrap_or(Instant::now())
                 .elapsed()
-                .as_secs_f32()
+                .as_secs_f64()
             // Avoid division by zero
             + 0.0001;
             // Are we there yet?
