@@ -17,6 +17,7 @@ pub mod wheel;
 #[derive(Debug)]
 pub struct TrackingSubsystem {
     pose: Rc<RefCell<Pose>>,
+    reverse: bool,
     _task: vexide::task::Task<()>,
 }
 
@@ -36,6 +37,7 @@ impl TrackingSubsystem {
         let current_pose = Rc::new(RefCell::new(initial));
         Self {
             pose: current_pose.clone(),
+            reverse: false,
             _task: vexide::task::spawn(async move {
                 let mut last_heading = initial.heading() - heading_sensor.heading();
                 loop {
@@ -80,6 +82,23 @@ impl TrackingSubsystem {
     }
 
     pub fn context(&self) -> Pose {
-        *self.pose.borrow()
+        let pose = *self.pose.borrow();
+        if self.reverse {
+            Pose::new(pose.offset.x, -pose.offset.y, PI - pose.heading)
+        } else {
+            pose
+        }
+    }
+
+    pub fn set_pose(&mut self, pose: Pose) {
+        *self.pose.borrow_mut() = pose;
+    }
+
+    pub fn reverse(&self) -> bool {
+        self.reverse
+    }
+
+    pub fn set_reverse(&mut self, reverse: bool) {
+        self.reverse = reverse;
     }
 }
