@@ -13,6 +13,7 @@ apt-get install -y \
 ## Install rustup and common components
 RUST_TOOLCHAIN="nightly-2025-02-18"
 curl https://sh.rustup.rs -sSf | sh -s -- -y
+. "$HOME/.cargo/env"
 rustup install $RUST_TOOLCHAIN
 rustup component add rustfmt
 rustup component add rustfmt --toolchain $RUST_TOOLCHAIN
