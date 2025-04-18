@@ -7,42 +7,9 @@ use vexide_motorgroup::MotorGroup;
 use super::tracking::TrackingSubsystem;
 
 pub mod actions;
+mod voltage_pair;
 
-#[derive(Debug, Clone, Copy)]
-pub struct VoltagePair {
-    pub left: f64,
-    pub right: f64,
-}
-
-impl From<f64> for VoltagePair {
-    fn from(voltage: f64) -> Self {
-        Self {
-            left: voltage,
-            right: voltage,
-        }
-    }
-}
-
-impl VoltagePair {
-    /// Scales the voltage pair preserving the ratio while staying under the max
-    /// voltage
-    #[must_use = "does not mutate original value"]
-    pub fn max_voltage(self, max_voltage: f64) -> Self {
-        if self.left.abs() <= max_voltage && self.right.abs() <= max_voltage {
-            self
-        } else {
-            let ratio = if self.left.abs() >= self.right.abs() {
-                max_voltage / self.left.abs()
-            } else {
-                max_voltage / self.right.abs()
-            };
-            VoltagePair {
-                left: self.left * ratio,
-                right: self.right * ratio,
-            }
-        }
-    }
-}
+pub use voltage_pair::VoltagePair;
 
 pub struct Drivetrain {
     action: Rc<RefCell<Option<Box<dyn actions::Action>>>>,
@@ -71,9 +38,11 @@ impl Drivetrain {
                 loop {
                     let mut action_owned = action.borrow_mut();
                     if let Some(ref mut action_ref) = *action_owned {
-                        let position = tracking.context();
+                        // Get the tracking position
+                        let position = tracking.pose();
                         let mut left = left.borrow_mut();
                         let mut right = right.borrow_mut();
+                        // Assemble the action context
                         let context = actions::ActionContext {
                             left_offset: left
                                 .position()
@@ -87,8 +56,17 @@ impl Drivetrain {
                             right_velocity: right.velocity().unwrap_or(0.0) * wheel_circumference,
                             pose: position,
                         };
-                        if let Some(voltage) = action_ref.update(context) {
-                            let voltage = voltage.max_voltage(*max_voltage.borrow());
+                        // Run the action
+                        if let Some(mut voltage) = action_ref.update(context) {
+                            // If the action is still running
+                            if tracking.reverse() {
+                                // Rotate the robot in the opposite direction
+                                // if the tracking subsystem is reversed
+                                voltage = voltage.reverse();
+                            }
+                            // Scale the voltage to be under the max voltage
+                            voltage = voltage.max_voltage(*max_voltage.borrow());
+                            // Set the voltage
                             if let Err(e) = left.set_voltage(voltage.left) {
                                 log::error!("Failed to set left voltage: {:?}", e);
                             }
@@ -97,12 +75,14 @@ impl Drivetrain {
                             }
                             drop(action_owned);
                         } else {
+                            // Zero out the motors if the action is done
                             _ = left.set_voltage(0.0);
                             _ = right.set_voltage(0.0);
                             *action_owned = None;
                             mem::drop(action_owned);
                             mem::drop(left);
                             mem::drop(right);
+                            // Notify the main task that the action is done
                             if let Some(barrier) = action_finish_barrier.borrow().as_ref() {
                                 barrier.wait().await;
                             }

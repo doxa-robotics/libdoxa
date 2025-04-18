@@ -58,8 +58,7 @@ impl TrackingSubsystem {
                     {
                         let mut current_pose = current_pose.borrow_mut();
                         let rotation_matrix = Rotation2::new(average_heading - PI / 2.0);
-                        current_pose.offset +=
-                            rotation_matrix.transform_vector(&average_displacement);
+                        current_pose.offset += rotation_matrix * average_displacement;
                         current_pose.heading = average_heading;
                     }
                     #[cfg(feature = "unsafe_debug_render")]
@@ -81,7 +80,7 @@ impl TrackingSubsystem {
         }
     }
 
-    pub fn context(&self) -> Pose {
+    pub fn pose(&self) -> Pose {
         let pose = *self.pose.borrow();
         if self.reverse {
             Pose::new(pose.offset.x, -pose.offset.y, PI - pose.heading)
