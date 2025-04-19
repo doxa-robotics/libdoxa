@@ -1,40 +1,54 @@
+use alloc::boxed::Box;
 use alloc::vec::Vec;
-use alloc::{boxed::Box, vec};
-use vexide::{
-    devices::{
-        display::{self, Rect},
-        math::Point2,
-    },
-    prelude::Rgb,
-};
+use embedded_graphics::image::Image;
+use embedded_graphics::pixelcolor::Rgb888;
+use embedded_graphics::prelude::*;
+use embedded_graphics::primitives::{Circle, Line, PrimitiveStyleBuilder, StyledDrawable};
+use nalgebra::{Point2, Vector2};
+use vexide::devices::display::{self};
 
 use crate::path_planner::Path;
 
+const FIELD_SIZE: f64 = 240.0;
+const FIELD_ORIGIN: Point2<f64> = Point2::new(FIELD_SIZE / 2.0, FIELD_SIZE / 2.0);
+/// Field scale multiplier to convert from mm to pixels
+const FIELD_SCALE: f64 = FIELD_SIZE / (600.0 * 6.0);
+
 pub struct DebugRenderMark {
-    pub x: i16,
-    pub y: i16,
-    pub color: vexide::devices::rgb::Rgb<u8>,
-    size: u16,
+    pub point: Point2<i32>,
+    pub color: Rgb888,
+    size: u32,
 }
 
 impl Default for DebugRenderMark {
     fn default() -> Self {
         Self {
-            x: 0,
-            y: 0,
-            color: vexide::devices::rgb::Rgb::new(255, 0, 0),
+            point: Point2::new(0, 0),
+            color: Rgb888::new(255, 0, 0),
             size: 2,
         }
     }
 }
 
+trait Point2Ext {
+    fn to_point(self) -> Point;
+}
+
+impl Point2Ext for Point2<f64> {
+    fn to_point(self) -> Point {
+        Point::new(self.x as i32, self.y as i32)
+    }
+}
+impl Point2Ext for Point2<i32> {
+    fn to_point(self) -> Point {
+        Point::new(self.x, self.y)
+    }
+}
+
 pub struct DebugRender {
-    display: display::Display,
-    field_image: Vec<Rgb<u8>>,
-    field_width: i16,
-    field_height: i16,
-    field_origin: Point2<i16>,
-    field_scale: f64,
+    display: vexide_embedded_graphics::DisplayDriver,
+    field_bmp:
+        tinybmp::Bmp<'static, <vexide_embedded_graphics::DisplayDriver as DrawTarget>::Color>,
 
     pub paths: Vec<Box<dyn Path>>,
     pub marks: Vec<DebugRenderMark>,
@@ -42,40 +56,9 @@ pub struct DebugRender {
 
 impl DebugRender {
     pub fn new(display: display::Display) -> Self {
-        // Load the field image from assets
-        let mut bmp = zune_bmp::BmpDecoder::new(include_bytes!("../assets/field.bmp"));
-        let field_image = bmp.decode().unwrap();
-        let (width, height) = bmp.get_dimensions().unwrap();
-        debug_assert!(field_image.len() == (width * height * 3));
-        // Convert the BMP data to RGB format
-        let field_image = field_image
-            .chunks_exact(4)
-            // Skip the first half of the image to get the bottom half
-            .skip(width * height / 2)
-            .map(|chunk| {
-                // Format is RGBA, we need to convert it
-                Rgb::new(128 + chunk[2] / 2, 128 + chunk[1] / 2, 128 + chunk[0] / 2)
-            })
-            .collect::<Vec<Rgb<u8>>>()
-            // Duplicate each row to fix a decoding bug
-            .chunks_exact(width)
-            .flat_map(|row| {
-                // Reverse the row to match the display orientation
-                vec![row.to_vec(), row.to_vec()]
-            })
-            .flatten()
-            .collect::<Vec<Rgb<u8>>>();
-        log::info!("Field image loaded with dimensions: {}x{}", width, height);
         Self {
-            display,
-            field_image,
-            field_width: width as i16,
-            field_height: height as i16,
-            field_origin: Point2 {
-                x: width as i16 / 2,
-                y: height as i16 / 2,
-            },
-            field_scale: width as f64 / (600.0 * 6.0),
+            display: vexide_embedded_graphics::DisplayDriver::new(display),
+            field_bmp: tinybmp::Bmp::from_slice(include_bytes!("../assets/field.bmp")).unwrap(),
 
             paths: Vec::new(),
             marks: Vec::new(),
@@ -85,43 +68,27 @@ impl DebugRender {
     /// Renders the field and overlays the paths and marks
     /// This function should be called in a loop to update the display
     pub fn render(&mut self) {
-        // Clear the display
-        self.display.erase((0, 0, 0));
+        self.display.clear(Rgb888::BLACK).unwrap();
 
-        // Draw the field image
-        self.display.draw_buffer(
-            Rect {
-                start: Point2 { x: 0, y: 0 },
-                end: Point2 {
-                    x: self.field_width,
-                    y: self.field_height,
-                },
-            },
-            self.field_image.clone(), // fun, allocations
-            self.field_width as i32,
-        );
+        let image = Image::with_center(&self.field_bmp, FIELD_ORIGIN.to_point());
+        image.draw(&mut self.display).unwrap();
 
         // Draw the paths
         for path in &self.paths {
             let mut last_point = path.evaluate(0.0);
             let dt = 0.01;
             let mut t = 0.0;
-            let color = Rgb::new(255, 0, 0);
+            let style = PrimitiveStyleBuilder::new()
+                .stroke_color(Rgb888::new(255, 0, 0))
+                .stroke_width(2)
+                .build();
             while t <= 1.0 {
                 let current_point = path.evaluate(t);
-                self.display.fill(
-                    &display::Line::new(
-                        Point2 {
-                            x: (last_point.x() * self.field_scale) as i16 + self.field_origin.x,
-                            y: self.field_origin.y - (last_point.y() * self.field_scale) as i16,
-                        },
-                        Point2 {
-                            x: (current_point.x() * self.field_scale) as i16 + self.field_origin.x,
-                            y: self.field_origin.y - (current_point.y() * self.field_scale) as i16,
-                        },
-                    ),
-                    color,
+                let line = Line::new(
+                    (FIELD_ORIGIN + (Vector2::from(last_point) * FIELD_SCALE)).to_point(),
+                    (FIELD_ORIGIN + (Vector2::from(current_point) * FIELD_SCALE)).to_point(),
                 );
+                line.draw_styled(&style, &mut self.display).unwrap();
                 last_point = current_point;
                 t += dt;
             }
@@ -129,28 +96,17 @@ impl DebugRender {
 
         // Draw the marks
         for mark in &self.marks {
-            self.display.fill(
-                &display::Circle::new(
-                    Point2 {
-                        x: (mark.x as f64 * self.field_scale) as i16 + self.field_origin.x,
-                        y: self.field_origin.y - (mark.y as f64 * self.field_scale) as i16,
-                    },
-                    mark.size,
-                ),
-                mark.color,
-            );
+            let circle = Circle::with_center(
+                Point {
+                    x: mark.point.x,
+                    y: mark.point.y,
+                },
+                mark.size,
+            )
+            .into_styled(PrimitiveStyleBuilder::new().fill_color(mark.color).build());
+            circle.draw(&mut self.display).unwrap();
         }
 
         self.display.render();
-    }
-
-    pub fn render_extra(
-        &mut self,
-        func: impl FnOnce(&mut display::Display, &dyn Fn(Point2<i16>) -> Point2<i16>),
-    ) {
-        func(&mut self.display, &|point| Point2 {
-            x: (point.x as f64 * self.field_scale) as i16 + self.field_origin.x,
-            y: self.field_origin.y - (point.y as f64 * self.field_scale) as i16,
-        });
     }
 }

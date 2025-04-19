@@ -27,7 +27,9 @@ nalgebra = { version = "0.33.2", default-features = false, features = [
     "alloc",
     "libm",
 ] }
-zune-bmp = "0.4.0"
+vexide-embedded-graphics = { version = "0.1.0", git = "https://github.com/zabackary/vexide-embedded-graphics.git", branch = "perf/draw-target-impl" }
+embedded-graphics = { version = "0.8.1", features = ["nalgebra_support"] }
+tinybmp = "0.6.0"
 
 [features]
 default = []

@@ -54,6 +54,18 @@ impl From<(f64, f64)> for Pose {
     }
 }
 
+impl From<Pose> for nalgebra::Point2<f64> {
+    fn from(pose: Pose) -> Self {
+        nalgebra::Point2::new(pose.offset.x, pose.offset.y)
+    }
+}
+
+impl From<Pose> for nalgebra::Vector2<f64> {
+    fn from(pose: Pose) -> Self {
+        nalgebra::Vector2::new(pose.offset.x, pose.offset.y)
+    }
+}
+
 impl Pose {
     /// Creates a new Pose with the given x, y coordinates and heading.
     pub fn new(x: f64, y: f64, heading: f64) -> Self {
