@@ -1,9 +1,12 @@
 use alloc::boxed::Box;
+use alloc::format;
 use alloc::vec::Vec;
 use embedded_graphics::image::Image;
+use embedded_graphics::mono_font::MonoTextStyleBuilder;
 use embedded_graphics::pixelcolor::Rgb888;
 use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::{Circle, Line, PrimitiveStyleBuilder, StyledDrawable};
+use embedded_graphics::text::{Text, TextStyleBuilder};
 use nalgebra::{Point2, Vector2};
 use vexide::devices::display::{self};
 
@@ -106,6 +109,30 @@ impl DebugRender {
             .into_styled(PrimitiveStyleBuilder::new().fill_color(mark.color).build());
             circle.draw(&mut self.display).unwrap();
         }
+
+        let text = format!(
+            "libdoxa v{}\ndebug renderer\nhigh stakes 2024-25",
+            env!("CARGO_PKG_VERSION")
+        );
+        let label_text = Text::with_text_style(
+            &text,
+            Point2::new(
+                FIELD_SIZE + (self.display.bounding_box().size.width as f64 - FIELD_SIZE) / 2.0,
+                self.display.bounding_box().size.height as f64 / 2.0 - 18.0,
+            )
+            .to_point(),
+            MonoTextStyleBuilder::new()
+                .font(&embedded_graphics::mono_font::iso_8859_16::FONT_10X20)
+                .text_color(Rgb888::new(255, 255, 255))
+                .build(),
+            TextStyleBuilder::new()
+                .alignment(embedded_graphics::text::Alignment::Center)
+                .baseline(embedded_graphics::text::Baseline::Middle)
+                .line_height(embedded_graphics::text::LineHeight::Pixels(18))
+                .build(),
+        );
+
+        label_text.draw(&mut self.display).unwrap();
 
         self.display.render();
     }
