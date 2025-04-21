@@ -19,8 +19,7 @@ pub struct ForwardAction {
 
 impl ForwardAction {
     pub fn new(distance: f64, config: ActionConfig) -> Self {
-        let mut controller = Pid::new(0.0, Motor::V5_MAX_VOLTAGE);
-        controller.setpoint(distance);
+        let controller = config.linear_pid(distance, Motor::V5_MAX_VOLTAGE);
         Self {
             controller,
             tolerances: config.linear_tolerances(),
