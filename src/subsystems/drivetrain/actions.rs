@@ -3,6 +3,7 @@ use core::fmt::Debug;
 use crate::utils::pose::Pose;
 
 mod boomerang;
+pub mod config;
 mod drive_to_point;
 mod forward;
 mod lazy;
