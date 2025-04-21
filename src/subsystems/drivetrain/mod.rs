@@ -25,7 +25,7 @@ impl Drivetrain {
         right: Rc<RefCell<MotorGroup>>,
         wheel_circumference: f64,
         max_voltage: f64,
-        tracking: TrackingSubsystem,
+        tracking: Rc<RefCell<TrackingSubsystem>>,
     ) -> Self {
         let action = Rc::new(RefCell::new(None));
         let action_finish_barrier = Rc::new(RefCell::new(None));
@@ -39,6 +39,7 @@ impl Drivetrain {
                     let mut action_owned = action.borrow_mut();
                     if let Some(ref mut action_ref) = *action_owned {
                         // Get the tracking position
+                        let tracking = tracking.borrow();
                         let position = tracking.pose();
                         let mut left = left.borrow_mut();
                         let mut right = right.borrow_mut();
@@ -82,6 +83,7 @@ impl Drivetrain {
                             mem::drop(action_owned);
                             mem::drop(left);
                             mem::drop(right);
+                            mem::drop(tracking);
                             // Notify the main task that the action is done
                             if let Some(barrier) = action_finish_barrier.borrow().as_ref() {
                                 barrier.wait().await;
