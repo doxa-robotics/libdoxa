@@ -108,10 +108,16 @@ impl TrackingSubsystem {
 
     /// Reset the current pose of the robot
     ///
-    /// Note that this is in the original coordinate system, not the transformed
-    /// coordinate system used by the `reverse` function.
+    /// Note that this in the transformed coordinate system used by the `reverse`
+    /// function.
     pub fn set_pose(&mut self, pose: Pose) {
-        *self.pose.borrow_mut() = pose;
+        *self.pose.borrow_mut() = {
+            if self.reverse {
+                Pose::new(pose.offset.x, -pose.offset.y, PI - pose.heading)
+            } else {
+                pose
+            }
+        };
     }
 
     /// The reverse state of the tracking subsystem
