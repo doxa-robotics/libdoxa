@@ -25,7 +25,7 @@ impl Drivetrain {
         right: Rc<RefCell<MotorGroup>>,
         wheel_circumference: f64,
         max_voltage: f64,
-        tracking: TrackingSubsystem,
+        tracking: Rc<RefCell<TrackingSubsystem>>,
     ) -> Self {
         let action = Rc::new(RefCell::new(None));
         let action_finish_barrier = Rc::new(RefCell::new(None));
@@ -39,7 +39,7 @@ impl Drivetrain {
                     let mut action_owned = action.borrow_mut();
                     if let Some(ref mut action_ref) = *action_owned {
                         // Get the tracking position
-                        let position = tracking.pose();
+                        let position = tracking.borrow().pose();
                         let mut left = left.borrow_mut();
                         let mut right = right.borrow_mut();
                         // Assemble the action context
@@ -59,7 +59,7 @@ impl Drivetrain {
                         // Run the action
                         if let Some(mut voltage) = action_ref.update(context) {
                             // If the action is still running
-                            if tracking.reverse() {
+                            if tracking.borrow().reverse() {
                                 // Rotate the robot in the opposite direction
                                 // if the tracking subsystem is reversed
                                 voltage = voltage.reverse();
