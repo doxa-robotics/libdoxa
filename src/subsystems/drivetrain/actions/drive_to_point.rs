@@ -1,7 +1,9 @@
+use vexide::prelude::Motor;
+
+use super::config::ActionConfig;
 use super::{forward::ForwardAction, turn_to_point::TurnToPointAction, Action, ActionContext};
 use crate::subsystems::drivetrain::VoltagePair;
 use crate::utils::pose::Pose;
-use crate::utils::settling;
 
 /// An action that drives the robot to a specific point.
 ///
@@ -13,9 +15,7 @@ pub struct DriveToPointAction {
     target: Pose,
     state: DriveToPointState,
     turn_controller: pid::Pid<f64>,
-    forward_controller: pid::Pid<f64>,
-    turn_tolerances: settling::Tolerances,
-    forward_tolerances: settling::Tolerances,
+    config: super::config::ActionConfig,
 }
 
 #[derive(Debug)]
@@ -27,20 +27,12 @@ enum DriveToPointState {
 }
 
 impl DriveToPointAction {
-    pub fn new(
-        target: Pose,
-        turn_controller: pid::Pid<f64>,
-        forward_controller: pid::Pid<f64>,
-        turn_tolerances: settling::Tolerances,
-        forward_tolerances: settling::Tolerances,
-    ) -> Self {
+    pub fn new(target: Pose, config: ActionConfig) -> Self {
         Self {
             target,
             state: DriveToPointState::NotStarted,
-            turn_controller,
-            forward_controller,
-            turn_tolerances,
-            forward_tolerances,
+            turn_controller: config.turn_pid(0.0, Motor::V5_MAX_VOLTAGE),
+            config,
         }
     }
 }
@@ -52,11 +44,8 @@ impl Action for DriveToPointAction {
                 // Transition to the turning state
                 let target_heading = context.pose.angle_to(self.target);
                 self.turn_controller.setpoint = target_heading;
-                self.state = DriveToPointState::Turning(TurnToPointAction::new(
-                    self.target,
-                    self.turn_controller,
-                    self.turn_tolerances,
-                ));
+                self.state =
+                    DriveToPointState::Turning(TurnToPointAction::new(self.target, self.config));
                 self.update(context)
             }
             DriveToPointState::Turning(turn_action) => {
@@ -64,14 +53,9 @@ impl Action for DriveToPointAction {
                     return Some(voltage);
                 }
                 // Transition to driving action
-                self.forward_controller.setpoint = self.target.distance(context.pose);
-                log::debug!(
-                    "DriveToPointAction: Forward setpoint: {}",
-                    self.forward_controller.setpoint
-                );
                 self.state = DriveToPointState::Driving(ForwardAction::new(
-                    self.forward_controller,
-                    self.forward_tolerances,
+                    self.target.distance(context.pose),
+                    self.config,
                 ));
                 self.update(context)
             }

@@ -1,11 +1,13 @@
 use pid::Pid;
+use vexide::prelude::Motor;
 
 use crate::utils::settling;
+
+use super::config::ActionConfig;
 
 /// An action that drives the robot forward a certain distance.
 ///
 /// This action uses a PID controller to drive the robot forward a certain distance.
-/// Set the PID constants and set point to determine the target distance.
 #[derive(Debug)]
 pub struct ForwardAction {
     controller: Pid<f64>,
@@ -16,10 +18,12 @@ pub struct ForwardAction {
 }
 
 impl ForwardAction {
-    pub fn new(controller: Pid<f64>, tolerances: settling::Tolerances) -> Self {
+    pub fn new(distance: f64, config: ActionConfig) -> Self {
+        let mut controller = Pid::new(0.0, Motor::V5_MAX_VOLTAGE);
+        controller.setpoint(distance);
         Self {
             controller,
-            tolerances,
+            tolerances: config.linear_tolerances(),
             initial_left_offset: None,
             initial_right_offset: None,
         }

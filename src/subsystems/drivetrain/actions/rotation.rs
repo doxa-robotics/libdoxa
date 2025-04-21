@@ -2,11 +2,13 @@ use core::f64::consts::PI;
 
 use crate::utils::settling;
 use pid::Pid;
+use vexide::prelude::Motor;
+
+use super::config::ActionConfig;
 
 /// An action that rotates the drivetrain to a specific absolute heading.
 ///
 /// This action uses a PID controller to rotate the drivetrain to a target heading.
-/// Set the PID constants and set point to determine the target heading.
 #[derive(Debug)]
 pub struct RotationAction {
     controller: Pid<f64>,
@@ -15,10 +17,10 @@ pub struct RotationAction {
 }
 
 impl RotationAction {
-    pub fn new(controller: Pid<f64>, tolerances: settling::Tolerances) -> Self {
+    pub fn new(target_radians: f64, config: ActionConfig) -> Self {
         Self {
-            controller,
-            tolerances,
+            controller: config.turn_pid(target_radians, Motor::V5_MAX_VOLTAGE),
+            tolerances: config.turn_tolerances(),
             initialized: false, // Initialize the flag to false
         }
     }

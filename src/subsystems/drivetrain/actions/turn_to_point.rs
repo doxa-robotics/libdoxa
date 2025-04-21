@@ -1,6 +1,6 @@
-use crate::utils::{pose::Pose, settling};
+use crate::utils::pose::Pose;
 
-use super::RotationAction;
+use super::{config::ActionConfig, RotationAction};
 
 /// An action that turns the robot to face a point.
 ///
@@ -9,17 +9,15 @@ use super::RotationAction;
 #[derive(Debug)]
 pub struct TurnToPointAction {
     target: Pose,
-    controller: pid::Pid<f64>,
-    tolerances: settling::Tolerances,
+    config: ActionConfig,
     action: Option<RotationAction>,
 }
 
 impl TurnToPointAction {
-    pub fn new(target: Pose, controller: pid::Pid<f64>, tolerances: settling::Tolerances) -> Self {
+    pub fn new(target: Pose, config: ActionConfig) -> Self {
         Self {
             target,
-            controller,
-            tolerances,
+            config,
             action: None,
         }
     }
@@ -32,8 +30,7 @@ impl super::Action for TurnToPointAction {
     ) -> Option<crate::subsystems::drivetrain::VoltagePair> {
         if self.action.is_none() {
             let target_heading = context.pose.angle_to(self.target);
-            self.controller.setpoint = target_heading;
-            self.action = Some(RotationAction::new(self.controller, self.tolerances));
+            self.action = Some(RotationAction::new(target_heading, self.config));
         }
 
         self.action.as_mut().unwrap().update(context)

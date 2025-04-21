@@ -1,12 +1,15 @@
 use core::f64::consts::PI;
 
 use pid::Pid;
+use vexide::prelude::Motor;
 
 use crate::{
     path_planner::Path,
     subsystems::drivetrain::VoltagePair,
     utils::{pose::Pose, settling::Tolerances},
 };
+
+use super::config::ActionConfig;
 
 #[derive(Debug)]
 pub struct PurePursuitAction<T: Path> {
@@ -21,38 +24,27 @@ pub struct PurePursuitAction<T: Path> {
     lookahead: f64,
     settled: bool,
     end_pose: Pose,
-    max_voltage: f64,
     final_seeking: bool,
     seeking_pid: Pid<f64>,
 }
 
 impl<T: Path> PurePursuitAction<T> {
-    pub fn new(
-        path: T,
-        rotational_pid: Pid<f64>,
-        mut linear_pid: Pid<f64>,
-        seeking_pid: Pid<f64>,
-        linear_tolerances: Tolerances,
-        lookahead: f64,
-        max_voltage: f64,
-    ) -> Self {
+    pub fn new(path: T, config: ActionConfig) -> Self {
         let path_total = path.length();
-        linear_pid.setpoint(path_total);
         Self {
             end_pose: path.evaluate(1.0),
             path_total,
             target_point: path.evaluate(0.0),
             path,
-            rotational_pid,
-            linear_pid,
-            seeking_pid,
-            linear_tolerances,
             last_t: 0.0,
             last_path_distance: 0.0,
-            lookahead,
             settled: false,
-            max_voltage,
             final_seeking: false,
+            lookahead: config.pursuit_lookahead,
+            rotational_pid: config.pursuit_turn_pid(0.0, Motor::V5_MAX_VOLTAGE),
+            linear_pid: config.linear_pid(0.0, Motor::V5_MAX_VOLTAGE),
+            linear_tolerances: config.linear_tolerances(),
+            seeking_pid: config.turn_pid(0.0, Motor::V5_MAX_VOLTAGE),
         }
     }
 }
@@ -106,13 +98,10 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                 return None;
             }
             // If we are not settled, we need to return the voltage
-            Some(
-                VoltagePair {
-                    left: linear_voltage - rotational_voltage,
-                    right: linear_voltage + rotational_voltage,
-                }
-                .max_voltage(self.max_voltage),
-            )
+            Some(VoltagePair {
+                left: linear_voltage - rotational_voltage,
+                right: linear_voltage + rotational_voltage,
+            })
         } else {
             // Find the closest point on the path to the current pose
             let current_t = self
@@ -189,13 +178,10 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                 .next_control_output(context.pose.heading())
                 .output;
 
-            Some(
-                VoltagePair {
-                    left: linear_voltage - rotational_voltage,
-                    right: linear_voltage + rotational_voltage,
-                }
-                .max_voltage(self.max_voltage),
-            )
+            Some(VoltagePair {
+                left: linear_voltage - rotational_voltage,
+                right: linear_voltage + rotational_voltage,
+            })
         }
     }
 }
