@@ -17,7 +17,7 @@ pub struct BoomerangAction {
 }
 
 impl BoomerangAction {
-    pub fn new(target_point: Pose, config: &super::config::ActionConfig) -> Self {
+    pub fn new(target_point: Pose, config: super::config::ActionConfig) -> Self {
         Self {
             rotational_pid: config.turn_pid(0.0, Motor::V5_MAX_VOLTAGE),
             linear_pid: config.linear_pid(0.0, Motor::V5_MAX_VOLTAGE),
