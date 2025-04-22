@@ -54,15 +54,13 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
         if self.settled {
             return None;
         }
-        // Convert the current pose to a Pose. This should be removed after
-        // `context` is updated to use Pose directly
         if self.final_seeking {
             let distance = self.target_point.distance(context.pose);
             if distance > self.lookahead {
                 self.final_seeking = false;
             }
-            self.linear_pid.setpoint(distance);
-            let mut linear_voltage = self.linear_pid.next_control_output(distance).output;
+            self.linear_pid.setpoint(0.0);
+            let mut linear_voltage = self.linear_pid.next_control_output(-distance).output; // TODO: hardware test the negative sign
             let mut angle_to_target = context.pose.angle_to(self.end_pose);
             log::debug!("angle_to_target: {}", angle_to_target);
             // Adjust angle_to_target to be closest to the context.pose.heading()
