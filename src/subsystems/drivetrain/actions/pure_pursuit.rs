@@ -34,6 +34,7 @@ impl<T: Path> PurePursuitAction<T> {
             end_pose: path.evaluate(1.0),
             path_total,
             target_point: path.evaluate(0.0),
+            linear_pid: config.linear_pid(path.length()),
             path,
             last_t: 0.0,
             last_path_distance: 0.0,
@@ -41,7 +42,6 @@ impl<T: Path> PurePursuitAction<T> {
             final_seeking: false,
             lookahead: config.pursuit_lookahead,
             rotational_pid: config.pursuit_turn_pid(0.0),
-            linear_pid: config.linear_pid(0.0),
             linear_tolerances: config.linear_tolerances(),
             seeking_pid: config.turn_pid(0.0),
         }
