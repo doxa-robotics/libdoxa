@@ -1,5 +1,4 @@
 use pid::Pid;
-use vexide::prelude::Motor;
 
 use crate::utils::settling;
 
@@ -19,7 +18,7 @@ pub struct ForwardAction {
 
 impl ForwardAction {
     pub fn new(distance: f64, config: ActionConfig) -> Self {
-        let controller = config.linear_pid(distance, Motor::V5_MAX_VOLTAGE);
+        let controller = config.linear_pid(distance);
         Self {
             controller,
             tolerances: config.linear_tolerances(),

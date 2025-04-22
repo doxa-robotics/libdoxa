@@ -1,7 +1,6 @@
 use core::f64::consts::PI;
 
 use pid::Pid;
-use vexide::prelude::Motor;
 
 use crate::{
     subsystems::drivetrain::VoltagePair,
@@ -19,8 +18,8 @@ pub struct BoomerangAction {
 impl BoomerangAction {
     pub fn new(target_point: Pose, config: super::config::ActionConfig) -> Self {
         Self {
-            rotational_pid: config.turn_pid(0.0, Motor::V5_MAX_VOLTAGE),
-            linear_pid: config.linear_pid(0.0, Motor::V5_MAX_VOLTAGE),
+            rotational_pid: config.turn_pid(0.0),
+            linear_pid: config.linear_pid(0.0),
             linear_tolerances: config.linear_tolerances(),
             target_point,
         }

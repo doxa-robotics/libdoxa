@@ -1,7 +1,6 @@
 use core::f64::consts::PI;
 
 use pid::Pid;
-use vexide::prelude::Motor;
 
 use crate::{
     path_planner::Path,
@@ -41,10 +40,10 @@ impl<T: Path> PurePursuitAction<T> {
             settled: false,
             final_seeking: false,
             lookahead: config.pursuit_lookahead,
-            rotational_pid: config.pursuit_turn_pid(0.0, Motor::V5_MAX_VOLTAGE),
-            linear_pid: config.linear_pid(0.0, Motor::V5_MAX_VOLTAGE),
+            rotational_pid: config.pursuit_turn_pid(0.0),
+            linear_pid: config.linear_pid(0.0),
             linear_tolerances: config.linear_tolerances(),
-            seeking_pid: config.turn_pid(0.0, Motor::V5_MAX_VOLTAGE),
+            seeking_pid: config.turn_pid(0.0),
         }
     }
 }

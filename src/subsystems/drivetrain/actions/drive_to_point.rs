@@ -1,5 +1,3 @@
-use vexide::prelude::Motor;
-
 use super::config::ActionConfig;
 use super::{forward::ForwardAction, turn_to_point::TurnToPointAction, Action, ActionContext};
 use crate::subsystems::drivetrain::VoltagePair;
@@ -19,6 +17,7 @@ pub struct DriveToPointAction {
 }
 
 #[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
 enum DriveToPointState {
     NotStarted,
     Turning(TurnToPointAction),
@@ -31,7 +30,7 @@ impl DriveToPointAction {
         Self {
             target,
             state: DriveToPointState::NotStarted,
-            turn_controller: config.turn_pid(0.0, Motor::V5_MAX_VOLTAGE),
+            turn_controller: config.turn_pid(0.0),
             config,
         }
     }

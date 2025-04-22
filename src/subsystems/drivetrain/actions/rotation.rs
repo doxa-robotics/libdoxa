@@ -2,7 +2,6 @@ use core::f64::consts::PI;
 
 use crate::utils::settling;
 use pid::Pid;
-use vexide::prelude::Motor;
 
 use super::config::ActionConfig;
 
@@ -19,7 +18,7 @@ pub struct RotationAction {
 impl RotationAction {
     pub fn new(target_radians: f64, config: ActionConfig) -> Self {
         Self {
-            controller: config.turn_pid(target_radians, Motor::V5_MAX_VOLTAGE),
+            controller: config.turn_pid(target_radians),
             tolerances: config.turn_tolerances(),
             initialized: false, // Initialize the flag to false
         }

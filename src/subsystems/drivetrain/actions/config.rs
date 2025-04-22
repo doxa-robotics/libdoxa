@@ -12,6 +12,7 @@ pub struct ActionConfig {
     pub linear_ki_limit: f64,
     pub linear_kd: f64,
     pub linear_kd_limit: f64,
+    pub linear_limit: f64,
 
     pub turn_kp: f64,
     pub turn_kp_limit: f64,
@@ -19,6 +20,7 @@ pub struct ActionConfig {
     pub turn_ki_limit: f64,
     pub turn_kd: f64,
     pub turn_kd_limit: f64,
+    pub turn_limit: f64,
 
     pub pursuit_turn_kp: f64,
     pub pursuit_turn_kp_limit: f64,
@@ -26,6 +28,7 @@ pub struct ActionConfig {
     pub pursuit_turn_ki_limit: f64,
     pub pursuit_turn_kd: f64,
     pub pursuit_turn_kd_limit: f64,
+    pub pursuit_turn_limit: f64,
     pub pursuit_lookahead: f64,
 
     pub linear_error_tolerance: f64,
@@ -40,24 +43,24 @@ pub struct ActionConfig {
 }
 
 impl ActionConfig {
-    pub fn linear_pid(&self, setpoint: f64, output_limit: f64) -> Pid<f64> {
-        let mut pid = Pid::new(setpoint, output_limit);
+    pub fn linear_pid(&self, setpoint: f64) -> Pid<f64> {
+        let mut pid = Pid::new(setpoint, self.linear_limit);
         pid.p(self.linear_kp, self.linear_kp_limit);
         pid.i(self.linear_ki, self.linear_ki_limit);
         pid.d(self.linear_kd, self.linear_kd_limit);
         pid
     }
 
-    pub fn turn_pid(&self, setpoint: f64, output_limit: f64) -> Pid<f64> {
-        let mut pid = Pid::new(setpoint, output_limit);
+    pub fn turn_pid(&self, setpoint: f64) -> Pid<f64> {
+        let mut pid = Pid::new(setpoint, self.turn_limit);
         pid.p(self.turn_kp, self.turn_kp_limit);
         pid.i(self.turn_ki, self.turn_ki_limit);
         pid.d(self.turn_kd, self.turn_kd_limit);
         pid
     }
 
-    pub fn pursuit_turn_pid(&self, setpoint: f64, output_limit: f64) -> Pid<f64> {
-        let mut pid = Pid::new(setpoint, output_limit);
+    pub fn pursuit_turn_pid(&self, setpoint: f64) -> Pid<f64> {
+        let mut pid = Pid::new(setpoint, self.pursuit_turn_limit);
         pid.p(self.pursuit_turn_kp, self.pursuit_turn_kp_limit);
         pid.i(self.pursuit_turn_ki, self.pursuit_turn_ki_limit);
         pid.d(self.pursuit_turn_kd, self.pursuit_turn_kd_limit);
@@ -105,6 +108,10 @@ impl ActionConfig {
         self.linear_kd_limit = linear_kd_limit;
         self
     }
+    pub fn with_linear_limit(mut self, linear_limit: f64) -> Self {
+        self.linear_limit = linear_limit;
+        self
+    }
     pub fn with_turn_kp(mut self, turn_kp: f64) -> Self {
         self.turn_kp = turn_kp;
         self
@@ -129,6 +136,10 @@ impl ActionConfig {
         self.turn_kd_limit = turn_kd_limit;
         self
     }
+    pub fn with_turn_limit(mut self, turn_limit: f64) -> Self {
+        self.turn_limit = turn_limit;
+        self
+    }
     pub fn with_pursuit_turn_kp(mut self, pursuit_turn_kp: f64) -> Self {
         self.pursuit_turn_kp = pursuit_turn_kp;
         self
@@ -151,6 +162,10 @@ impl ActionConfig {
     }
     pub fn with_pursuit_turn_kd_limit(mut self, pursuit_turn_kd_limit: f64) -> Self {
         self.pursuit_turn_kd_limit = pursuit_turn_kd_limit;
+        self
+    }
+    pub fn with_pursuit_turn_limit(mut self, pursuit_turn_limit: f64) -> Self {
+        self.pursuit_turn_limit = pursuit_turn_limit;
         self
     }
     pub fn with_pursuit_lookahead(mut self, pursuit_lookahead: f64) -> Self {
