@@ -76,8 +76,8 @@ impl super::Action for RotationAction {
 
         // Apply the output as a voltage pair for rotation
         Some(crate::subsystems::drivetrain::VoltagePair {
-            left: output,
-            right: -output,
+            left: -output,
+            right: output,
         })
     }
 }
