@@ -29,8 +29,7 @@ impl BoomerangAction {
 impl super::Action for BoomerangAction {
     fn update(&mut self, context: super::ActionContext) -> Option<VoltagePair> {
         let distance = self.target_point.distance(context.pose);
-        self.linear_pid.setpoint(distance);
-        let mut linear_voltage = self.linear_pid.next_control_output(distance).output;
+        let mut linear_voltage = self.linear_pid.next_control_output(-distance).output;
         if self.linear_tolerances.check(
             distance,
             (context.left_velocity + context.right_velocity) / 2.0,
