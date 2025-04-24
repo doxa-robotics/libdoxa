@@ -1,3 +1,5 @@
+use core::f64::consts::PI;
+
 use super::config::ActionConfig;
 use super::{forward::ForwardAction, turn_to_point::TurnToPointAction, Action, ActionContext};
 use crate::subsystems::drivetrain::VoltagePair;
@@ -11,6 +13,7 @@ use crate::utils::pose::Pose;
 #[derive(Debug)]
 pub struct DriveToPointAction {
     target: Pose,
+    reverse: bool,
     state: DriveToPointState,
     turn_controller: pid::Pid<f64>,
     config: super::config::ActionConfig,
@@ -26,9 +29,10 @@ enum DriveToPointState {
 }
 
 impl DriveToPointAction {
-    pub fn new(target: Pose, config: ActionConfig) -> Self {
+    pub fn new(target: Pose, reverse: bool, config: ActionConfig) -> Self {
         Self {
             target,
+            reverse,
             state: DriveToPointState::NotStarted,
             turn_controller: config.turn_pid(0.0),
             config,
@@ -41,10 +45,11 @@ impl Action for DriveToPointAction {
         match &mut self.state {
             DriveToPointState::NotStarted => {
                 // Transition to the turning state
-                let target_heading = context.pose.angle_to(self.target);
-                self.turn_controller.setpoint = target_heading;
-                self.state =
-                    DriveToPointState::Turning(TurnToPointAction::new(self.target, self.config));
+                self.state = DriveToPointState::Turning(TurnToPointAction::new(
+                    self.target,
+                    self.reverse,
+                    self.config,
+                ));
                 self.update(context)
             }
             DriveToPointState::Turning(turn_action) => {
@@ -53,7 +58,7 @@ impl Action for DriveToPointAction {
                 }
                 // Transition to driving action
                 self.state = DriveToPointState::Driving(ForwardAction::new(
-                    self.target.distance(context.pose),
+                    self.target.distance(context.pose) * if self.reverse { -1.0 } else { 1.0 },
                     self.config,
                 ));
                 self.update(context)

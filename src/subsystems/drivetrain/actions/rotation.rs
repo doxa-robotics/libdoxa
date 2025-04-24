@@ -66,13 +66,13 @@ impl super::Action for RotationAction {
             .next_control_output(context.pose.heading())
             .output;
 
-        log::debug!(
-            "Control output: {:.2?} Error: {:.2?} Setpoint: {:.2?} heading: {:.2?}",
-            output,
-            error,
-            self.controller.setpoint,
-            context.pose.heading()
-        );
+        // log::debug!(
+        //     "Control output: {:.2?} Error: {:.2?} Setpoint: {:.2?} heading: {:.2?}",
+        //     output,
+        //     error,
+        //     self.controller.setpoint,
+        //     context.pose.heading()
+        // );
 
         // Apply the output as a voltage pair for rotation
         Some(crate::subsystems::drivetrain::VoltagePair {

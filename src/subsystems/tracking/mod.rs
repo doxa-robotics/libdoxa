@@ -17,6 +17,7 @@ pub mod wheel;
 #[derive(Debug)]
 pub struct TrackingSubsystem {
     pose: Rc<RefCell<Pose>>,
+    initial_pose: Rc<RefCell<Pose>>,
     reverse: bool,
     _task: vexide::task::Task<()>,
 }
@@ -36,17 +37,19 @@ impl TrackingSubsystem {
             .into_iter()
             .collect::<Vec<wheel::TrackingWheel<LT>>>();
         let current_pose = Rc::new(RefCell::new(initial));
+        let initial_pose = Rc::new(RefCell::new(initial));
         Self {
             pose: current_pose.clone(),
+            initial_pose: initial_pose.clone(),
             reverse: false,
             _task: vexide::task::spawn(async move {
                 // Get the current heading to initialize last_heading. Note that
                 // the initial heading is taken into account.
-                let mut last_heading = initial.heading() - heading_sensor.heading();
+                let mut last_heading = initial_pose.borrow().heading() - heading_sensor.heading();
                 loop {
                     // Get the current heading and calculate the delta while
                     // taking the initial heading into account.
-                    let heading = initial.heading() - heading_sensor.heading();
+                    let heading = initial_pose.borrow().heading() - heading_sensor.heading();
                     let heading_delta = heading - last_heading;
                     last_heading = heading;
                     // Average the heading and displacement of the tracking wheels
@@ -106,18 +109,20 @@ impl TrackingSubsystem {
         }
     }
 
-    /// Reset the current pose of the robot
+    /// Reset the initial pose of the robot
     ///
     /// Note that this in the transformed coordinate system used by the `reverse`
     /// function.
     pub fn set_pose(&mut self, pose: Pose) {
-        *self.pose.borrow_mut() = {
+        let new_pose = {
             if self.reverse {
                 Pose::new(pose.offset.x, -pose.offset.y, PI - pose.heading)
             } else {
                 pose
             }
         };
+        *self.initial_pose.borrow_mut() = new_pose;
+        *self.pose.borrow_mut() = new_pose;
     }
 
     /// The reverse state of the tracking subsystem

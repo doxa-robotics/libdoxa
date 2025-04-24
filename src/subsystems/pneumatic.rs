@@ -1,8 +1,11 @@
+use core::cell::RefCell;
+
+use alloc::rc::Rc;
 use vexide::devices::adi::digital::LogicLevel;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PneumaticSubsystem<const N: usize, const LOW_IS_EXTENDED: bool = false> {
-    solenoids: [vexide::devices::adi::AdiDigitalOut; N],
+    solenoids: Rc<RefCell<[vexide::devices::adi::AdiDigitalOut; N]>>,
 }
 
 impl<const N: usize, const LOW_IS_EXTENDED: bool> PneumaticSubsystem<N, LOW_IS_EXTENDED> {
@@ -13,12 +16,14 @@ impl<const N: usize, const LOW_IS_EXTENDED: bool> PneumaticSubsystem<N, LOW_IS_E
                 panic!("Cannot create PneumaticSubsystem with zero solenoids.");
             }
         }
-        Self { solenoids }
+        Self {
+            solenoids: Rc::new(RefCell::new(solenoids)),
+        }
     }
 
     /// Extends the piston(s).
     pub fn extend(&mut self) {
-        for solenoid in self.solenoids.iter_mut() {
+        for solenoid in self.solenoids.borrow_mut().iter_mut() {
             _ = solenoid.set_level(match LOW_IS_EXTENDED {
                 true => LogicLevel::Low,
                 false => LogicLevel::High,
@@ -28,7 +33,7 @@ impl<const N: usize, const LOW_IS_EXTENDED: bool> PneumaticSubsystem<N, LOW_IS_E
 
     /// Retracts the piston(s).
     pub fn retract(&mut self) {
-        for solenoid in self.solenoids.iter_mut() {
+        for solenoid in self.solenoids.borrow_mut().iter_mut() {
             _ = solenoid.set_level(match LOW_IS_EXTENDED {
                 true => LogicLevel::High,
                 false => LogicLevel::Low,
@@ -38,14 +43,14 @@ impl<const N: usize, const LOW_IS_EXTENDED: bool> PneumaticSubsystem<N, LOW_IS_E
 
     /// Toggles the piston(s).
     pub fn toggle(&mut self) {
-        for solenoid in self.solenoids.iter_mut() {
+        for solenoid in self.solenoids.borrow_mut().iter_mut() {
             _ = solenoid.toggle();
         }
     }
 
     /// Returns whether the piston(s) is/are extended.
     pub fn extended(&self) -> bool {
-        self.solenoids[0].level().is_ok_and(|level| {
+        self.solenoids.borrow()[0].level().is_ok_and(|level| {
             level
                 == match LOW_IS_EXTENDED {
                     true => LogicLevel::Low,
@@ -56,7 +61,7 @@ impl<const N: usize, const LOW_IS_EXTENDED: bool> PneumaticSubsystem<N, LOW_IS_E
 
     /// Returns whether the piston(s) is/are retracted.
     pub fn retracted(&self) -> bool {
-        self.solenoids[0].level().is_ok_and(|level| {
+        self.solenoids.borrow()[0].level().is_ok_and(|level| {
             level
                 == match LOW_IS_EXTENDED {
                     true => LogicLevel::High,

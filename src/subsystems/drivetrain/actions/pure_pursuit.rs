@@ -13,6 +13,7 @@ use super::config::ActionConfig;
 #[derive(Debug)]
 pub struct PurePursuitAction<T: Path> {
     path: T,
+    disable_seeking: bool,
     path_total: f64,
     rotational_pid: Pid<f64>,
     linear_pid: Pid<f64>,
@@ -28,11 +29,12 @@ pub struct PurePursuitAction<T: Path> {
 }
 
 impl<T: Path> PurePursuitAction<T> {
-    pub fn new(path: T, config: ActionConfig) -> Self {
+    pub fn new(path: T, disable_seeking: bool, config: ActionConfig) -> Self {
         let path_total = path.length();
         Self {
             end_pose: path.evaluate(1.0),
             path_total,
+            disable_seeking,
             target_point: path.evaluate(0.0),
             linear_pid: config.linear_pid(path.length()),
             path,
@@ -147,6 +149,9 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                 // If we can't find a target point but we're within the lookahead
                 // distance, we can just use the end of the path
                 self.final_seeking = true;
+                if self.disable_seeking {
+                    self.settled = true;
+                }
             } else {
                 // We can't find a target point and we've strayed too far from the path
                 // Just use the last target point
