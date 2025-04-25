@@ -1,5 +1,6 @@
 use core::f64::consts::PI;
 
+use nalgebra::Rotation2;
 use pid::Pid;
 
 use crate::{
@@ -57,7 +58,10 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             return None;
         }
         if self.final_seeking {
-            let distance = self.target_point.distance(context.pose);
+            // get the linear distance to the target point
+            let distance = (Rotation2::new(-context.pose.heading())
+                * (self.end_pose.offset - context.pose.offset))
+                .y;
             if distance > self.lookahead {
                 self.final_seeking = false;
             }
@@ -154,7 +158,7 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                 }
             } else {
                 // We can't find a target point and we've strayed too far from the path
-                // Just use the last target point
+                self.final_seeking = true;
             }
             // Calculate the angle to the target point
             let mut angle_to_target = context.pose.angle_to(self.target_point);
