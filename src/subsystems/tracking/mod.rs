@@ -103,7 +103,7 @@ impl TrackingSubsystem {
     pub fn pose(&self) -> Pose {
         let pose = *self.pose.borrow();
         if *self.reverse.borrow() {
-            Pose::new(pose.offset.x, -pose.offset.y, PI - pose.heading)
+            Pose::new(-pose.offset.x, pose.offset.y, PI - pose.heading)
         } else {
             pose
         }
@@ -116,7 +116,7 @@ impl TrackingSubsystem {
     pub fn set_pose(&mut self, pose: Pose) {
         let new_pose = {
             if *self.reverse.borrow() {
-                Pose::new(pose.offset.x, -pose.offset.y, PI - pose.heading)
+                Pose::new(-pose.offset.x, pose.offset.y, PI - pose.heading)
             } else {
                 pose
             }
