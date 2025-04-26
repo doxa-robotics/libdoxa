@@ -18,7 +18,7 @@ pub mod wheel;
 pub struct TrackingSubsystem {
     pose: Rc<RefCell<Pose>>,
     initial_pose: Rc<RefCell<Pose>>,
-    reverse: bool,
+    reverse: Rc<RefCell<bool>>,
     _task: vexide::task::Task<()>,
 }
 
@@ -41,7 +41,7 @@ impl TrackingSubsystem {
         Self {
             pose: current_pose.clone(),
             initial_pose: initial_pose.clone(),
-            reverse: false,
+            reverse: Rc::new(RefCell::new(false)),
             _task: vexide::task::spawn(async move {
                 // Get the current heading to initialize last_heading. Note that
                 // the initial heading is taken into account.
@@ -102,7 +102,7 @@ impl TrackingSubsystem {
     /// function can be used to add genericity, if that's a word.
     pub fn pose(&self) -> Pose {
         let pose = *self.pose.borrow();
-        if self.reverse {
+        if *self.reverse.borrow() {
             Pose::new(pose.offset.x, -pose.offset.y, PI - pose.heading)
         } else {
             pose
@@ -115,7 +115,7 @@ impl TrackingSubsystem {
     /// function.
     pub fn set_pose(&mut self, pose: Pose) {
         let new_pose = {
-            if self.reverse {
+            if *self.reverse.borrow() {
                 Pose::new(pose.offset.x, -pose.offset.y, PI - pose.heading)
             } else {
                 pose
@@ -130,7 +130,7 @@ impl TrackingSubsystem {
     /// This will mirror the pose of the robot over the central line, inverting
     /// the pose heading and y-coordinate.
     pub fn reverse(&self) -> bool {
-        self.reverse
+        *self.reverse.borrow()
     }
 
     /// Sets the reverse state of the tracking subsystem
@@ -144,6 +144,6 @@ impl TrackingSubsystem {
     /// you should set the reverse state to be `false` at the beginning of
     /// driver control.
     pub fn set_reverse(&mut self, reverse: bool) {
-        self.reverse = reverse;
+        *self.reverse.borrow_mut() = reverse;
     }
 }
