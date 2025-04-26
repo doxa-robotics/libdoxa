@@ -15,7 +15,6 @@ pub struct DriveToPointAction {
     target: Pose,
     reverse: bool,
     state: DriveToPointState,
-    turn_controller: pid::Pid<f64>,
     config: super::config::ActionConfig,
 }
 
@@ -34,7 +33,6 @@ impl DriveToPointAction {
             target,
             reverse,
             state: DriveToPointState::NotStarted,
-            turn_controller: config.turn_pid(0.0),
             config,
         }
     }
