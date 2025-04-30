@@ -8,7 +8,7 @@ use crate::{
     utils::{pose::Pose, settling::Tolerances},
 };
 
-use super::{config::ActionConfig, BoomerangAction};
+use super::{boomerang::turning_linear_scalar_curve, config::ActionConfig, BoomerangAction};
 
 #[derive(Debug)]
 pub struct PurePursuitAction<T: Path> {
@@ -137,6 +137,10 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                 .next_control_output(context.pose.heading())
                 .output;
 
+            // First, scale the linear voltage.
+            let linear_scalar =
+                turning_linear_scalar_curve(context.pose.heading() - angle_to_target);
+            linear_voltage *= linear_scalar;
             Some(VoltagePair {
                 left: linear_voltage - rotational_voltage,
                 right: linear_voltage + rotational_voltage,

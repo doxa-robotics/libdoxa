@@ -7,6 +7,14 @@ use crate::{
     utils::{pose::Pose, settling::Tolerances},
 };
 
+/// Returns a scalar to apply to the linear output based on the turn error.
+pub(super) fn turning_linear_scalar_curve(turn_error: f64) -> f64 {
+    // min(1.0/(abs(x) + 0.8), 1.0)
+    // Domain: (-PI, PI)
+    // Range: (0.0, 1.0)
+    1.0_f64.min(1.0 / (turn_error.abs() + 0.8))
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct BoomerangAction {
     rotational_pid: Pid<f64>,
@@ -99,6 +107,9 @@ impl super::Action for BoomerangAction {
             .next_control_output(context.pose.heading())
             .output;
         // If we are not settled, we need to return the voltage
+        // First, scale the linear voltage.
+        let linear_scalar = turning_linear_scalar_curve(context.pose.heading() - angle_to_target);
+        linear_voltage *= linear_scalar;
         Some(VoltagePair {
             left: linear_voltage - rotational_voltage,
             right: linear_voltage + rotational_voltage,
