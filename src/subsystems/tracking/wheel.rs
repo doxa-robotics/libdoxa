@@ -94,8 +94,8 @@ impl<T: HasRotation> TrackingWheel<T> {
                 } else {
                     Vector2::new(
                         0.0,
-                        2.0 * (heading_delta / 2.0).sin()
-                            * (self.delta() / heading_delta + self.mounting_offset()),
+                        2.0 * (-heading_delta / 2.0).sin()
+                            * (self.delta() / -heading_delta + self.mounting_offset()),
                     )
                 }
             }
@@ -104,8 +104,8 @@ impl<T: HasRotation> TrackingWheel<T> {
                     Vector2::new(self.delta(), 0.0)
                 } else {
                     Vector2::new(
-                        2.0 * (heading_delta / 2.0).sin()
-                            * (self.delta() / heading_delta + self.mounting_offset()),
+                        2.0 * (-heading_delta / 2.0).sin()
+                            * (self.delta() / -heading_delta + self.mounting_offset()),
                         0.0,
                     )
                 }

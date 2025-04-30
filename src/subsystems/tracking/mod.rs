@@ -54,16 +54,20 @@ impl TrackingSubsystem {
                     last_heading = heading;
                     // Average the heading and displacement of the tracking wheels
                     let average_heading = (heading + last_heading) / 2.0;
-                    let average_displacement: Vector2<_> = (perpendicular_tracking_wheels
-                        .iter_mut()
-                        .map(|wheel| wheel.local_delta(heading_delta))
-                        .sum::<Vector2<_>>()
-                        / perpendicular_tracking_wheels.len() as f64
-                        + parallel_tracking_wheels
+                    let average_displacement: Vector2<_> =
+                        if perpendicular_tracking_wheels.is_empty() {
+                            Vector2::zeros()
+                        } else {
+                            perpendicular_tracking_wheels
+                                .iter_mut()
+                                .map(|wheel| wheel.local_delta(heading_delta))
+                                .sum::<Vector2<_>>()
+                                / perpendicular_tracking_wheels.len() as f64
+                        } + parallel_tracking_wheels
                             .iter_mut()
                             .map(|wheel| wheel.local_delta(heading_delta))
-                            .sum::<Vector2<_>>())
-                        / parallel_tracking_wheels.len() as f64;
+                            .sum::<Vector2<_>>()
+                            / parallel_tracking_wheels.len() as f64;
                     // Update the current pose with the new tracking data.
                     // This is in the original coordinate system.
                     {
