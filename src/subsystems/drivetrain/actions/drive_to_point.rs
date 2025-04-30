@@ -1,7 +1,6 @@
-use core::f64::consts::PI;
-
 use super::config::ActionConfig;
-use super::{forward::ForwardAction, turn_to_point::TurnToPointAction, Action, ActionContext};
+use super::BoomerangAction;
+use super::{turn_to_point::TurnToPointAction, Action, ActionContext};
 use crate::subsystems::drivetrain::VoltagePair;
 use crate::utils::pose::Pose;
 
@@ -15,6 +14,7 @@ pub struct DriveToPointAction {
     target: Pose,
     reverse: bool,
     state: DriveToPointState,
+    turn_config: super::config::ActionConfig,
     config: super::config::ActionConfig,
 }
 
@@ -23,7 +23,7 @@ pub struct DriveToPointAction {
 enum DriveToPointState {
     NotStarted,
     Turning(TurnToPointAction),
-    Driving(ForwardAction),
+    Driving(BoomerangAction),
     Done,
 }
 
@@ -34,7 +34,13 @@ impl DriveToPointAction {
             reverse,
             state: DriveToPointState::NotStarted,
             config,
+            turn_config: config,
         }
+    }
+
+    pub fn with_turn_config(mut self, turn_config: ActionConfig) -> Self {
+        self.turn_config = turn_config;
+        self
     }
 }
 
@@ -55,10 +61,8 @@ impl Action for DriveToPointAction {
                     return Some(voltage);
                 }
                 // Transition to driving action
-                self.state = DriveToPointState::Driving(ForwardAction::new(
-                    self.target.distance(context.pose) * if self.reverse { -1.0 } else { 1.0 },
-                    self.config,
-                ));
+                self.state =
+                    DriveToPointState::Driving(BoomerangAction::new(self.target, self.config));
                 self.update(context)
             }
             DriveToPointState::Driving(forward_action) => {
