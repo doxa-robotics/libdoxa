@@ -10,6 +10,7 @@ use crate::{
 #[derive(Debug, Clone, Copy)]
 pub struct BoomerangAction {
     rotational_pid: Pid<f64>,
+    rotational_setpoint_initialized: bool,
     linear_pid: Pid<f64>,
     linear_tolerances: Tolerances,
     target_point: Pose,
@@ -27,6 +28,7 @@ impl BoomerangAction {
             target_point,
             left_zero: None,
             right_zero: None,
+            rotational_setpoint_initialized: false,
             settling_distance: 50.0,
         }
     }
@@ -88,8 +90,9 @@ impl super::Action for BoomerangAction {
             angle_to_target += 2.0 * PI;
         }
         // If we're within 50 mm of the target, we don't want to update our setpoint.
-        if distance > self.settling_distance {
+        if distance > self.settling_distance || !self.rotational_setpoint_initialized {
             self.rotational_pid.setpoint(angle_to_target);
+            self.rotational_setpoint_initialized = true;
         }
         let rotational_voltage = self
             .rotational_pid

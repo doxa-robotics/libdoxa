@@ -1,6 +1,5 @@
 use core::f64::consts::PI;
 
-use nalgebra::Rotation2;
 use pid::Pid;
 
 use crate::{
@@ -9,7 +8,7 @@ use crate::{
     utils::{pose::Pose, settling::Tolerances},
 };
 
-use super::config::ActionConfig;
+use super::{config::ActionConfig, BoomerangAction};
 
 #[derive(Debug)]
 pub struct PurePursuitAction<T: Path> {
@@ -25,8 +24,8 @@ pub struct PurePursuitAction<T: Path> {
     lookahead: f64,
     settled: bool,
     end_pose: Pose,
-    final_seeking: bool,
-    seeking_pid: Pid<f64>,
+    final_seeking: Option<BoomerangAction>,
+    config: ActionConfig,
 }
 
 impl<T: Path> PurePursuitAction<T> {
@@ -42,11 +41,11 @@ impl<T: Path> PurePursuitAction<T> {
             last_t: 0.0,
             last_path_distance: 0.0,
             settled: false,
-            final_seeking: false,
+            final_seeking: None,
             lookahead: config.pursuit_lookahead,
             rotational_pid: config.pursuit_turn_pid(0.0),
             linear_tolerances: config.linear_tolerances(),
-            seeking_pid: config.turn_pid(0.0),
+            config,
         }
     }
 }
@@ -57,54 +56,8 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
         if self.settled {
             return None;
         }
-        if self.final_seeking {
-            // get the linear distance to the target point
-            let distance = (Rotation2::new(-context.pose.heading())
-                * (self.end_pose.offset - context.pose.offset))
-                .y;
-            if distance > self.lookahead {
-                self.final_seeking = false;
-            }
-            self.linear_pid.setpoint(0.0);
-            let mut linear_voltage = self.linear_pid.next_control_output(-distance).output; // TODO: hardware test the negative sign
-            let mut angle_to_target = context.pose.angle_to(self.end_pose);
-            log::debug!("angle_to_target: {}", angle_to_target);
-            // Adjust angle_to_target to be closest to the context.pose.heading()
-            while angle_to_target - context.pose.heading() > PI {
-                angle_to_target -= 2.0 * PI;
-            }
-            while angle_to_target - context.pose.heading() < -PI {
-                angle_to_target += 2.0 * PI;
-            }
-            if angle_to_target - context.pose.heading() > PI / 2.0 {
-                angle_to_target -= PI;
-                linear_voltage = -linear_voltage;
-            } else if angle_to_target - context.pose.heading() < -PI / 2.0 {
-                angle_to_target += PI;
-                linear_voltage = -linear_voltage;
-            }
-            while angle_to_target - context.pose.heading() > PI {
-                angle_to_target -= 2.0 * PI;
-            }
-            while angle_to_target - context.pose.heading() < -PI {
-                angle_to_target += 2.0 * PI;
-            }
-            self.seeking_pid.setpoint(angle_to_target);
-            let rotational_voltage = self
-                .seeking_pid
-                .next_control_output(context.pose.heading())
-                .output;
-            let velocity = (context.left_velocity + context.right_velocity) / 2.0;
-            // If we are within the tolerances, we are settled
-            if self.linear_tolerances.check(distance, velocity) {
-                self.settled = true;
-                return None;
-            }
-            // If we are not settled, we need to return the voltage
-            Some(VoltagePair {
-                left: linear_voltage - rotational_voltage,
-                right: linear_voltage + rotational_voltage,
-            })
+        if let Some(mut action) = self.final_seeking {
+            action.update(context)
         } else {
             // Find the closest point on the path to the current pose
             let current_t = self
@@ -152,13 +105,13 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             } else if self.target_point.distance(context.pose) <= self.lookahead {
                 // If we can't find a target point but we're within the lookahead
                 // distance, we can just use the end of the path
-                self.final_seeking = true;
+                self.final_seeking = Some(BoomerangAction::new(self.end_pose, self.config));
                 if self.disable_seeking {
                     self.settled = true;
                 }
             } else {
                 // We can't find a target point and we've strayed too far from the path
-                self.final_seeking = true;
+                self.final_seeking = Some(BoomerangAction::new(self.end_pose, self.config));
             }
             // Calculate the angle to the target point
             let mut angle_to_target = context.pose.angle_to(self.target_point);
