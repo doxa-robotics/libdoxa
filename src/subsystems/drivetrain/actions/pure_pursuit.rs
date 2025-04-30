@@ -13,7 +13,7 @@ use super::{boomerang::turning_linear_scalar_curve, config::ActionConfig, Boomer
 #[derive(Debug)]
 pub struct PurePursuitAction<T: Path> {
     path: T,
-    disable_seeking: bool,
+    disable_seeking_distance: f64,
     path_total: f64,
     rotational_pid: Pid<f64>,
     linear_pid: Pid<f64>,
@@ -29,12 +29,12 @@ pub struct PurePursuitAction<T: Path> {
 }
 
 impl<T: Path> PurePursuitAction<T> {
-    pub fn new(path: T, disable_seeking: bool, config: ActionConfig) -> Self {
+    pub fn new(path: T, disable_seeking_distance: Option<f64>, config: ActionConfig) -> Self {
         let path_total = path.length();
         Self {
             end_pose: path.evaluate(1.0),
             path_total,
-            disable_seeking,
+            disable_seeking_distance: disable_seeking_distance.unwrap_or(0.0),
             target_point: path.evaluate(0.0),
             linear_pid: config.linear_pid(path.length()),
             path,
@@ -80,6 +80,13 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             // We simply use a PID controller while plugging in the error along the path
             let mut linear_voltage = self.linear_pid.next_control_output(path_distance).output;
 
+            // If we're within the disable seeking distance, let's just start seeking
+            // the end of the path
+            if self.target_point.distance(context.pose) < self.disable_seeking_distance {
+                self.final_seeking = Some(BoomerangAction::new(self.end_pose, self.config));
+                return None;
+            }
+
             // Calculate the rotational part of the differential drive
             // With pure pursuit, we find the intersection of the path and a circle
             // with radius equal to the lookahead distance
@@ -106,9 +113,6 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                 // If we can't find a target point but we're within the lookahead
                 // distance, we can just use the end of the path
                 self.final_seeking = Some(BoomerangAction::new(self.end_pose, self.config));
-                if self.disable_seeking {
-                    self.settled = true;
-                }
             } else {
                 // We can't find a target point and we've strayed too far from the path
                 self.final_seeking = Some(BoomerangAction::new(self.end_pose, self.config));
