@@ -8,9 +8,11 @@ use crate::utils::pose::Pose;
 use super::tracking::TrackingSubsystem;
 
 pub mod actions;
-mod drivetrain_pair;
+pub mod drivetrain_pair;
 
 pub use drivetrain_pair::DrivetrainPair;
+
+const LOOP_TIME: f64 = 10.0; // ms
 
 #[allow(clippy::type_complexity)]
 pub struct DrivetrainActionFuture {
@@ -61,7 +63,9 @@ impl Drivetrain {
         wheel_circumference: f64,
         max_voltage: f64,
         tracking: Rc<RefCell<TrackingSubsystem>>,
+        max_acceleration: f64, // rpm/s
     ) -> Self {
+        let max_acceleration_loop = max_acceleration * LOOP_TIME / 1000.0;
         let action = Rc::new(RefCell::new(None));
         let max_voltage = Rc::new(RefCell::new(max_voltage));
         Drivetrain {
@@ -69,7 +73,18 @@ impl Drivetrain {
             max_voltage: max_voltage.clone(),
             tracking: tracking.clone(),
             _task: vexide::task::spawn(async move {
+                let last_max_voltage = 0.0;
+                let mut last_left_rpm = 0.0;
+                let mut last_right_rpm = 0.0;
                 loop {
+                    {
+                        let max_voltage = max_voltage.borrow();
+                        if *max_voltage != last_max_voltage {
+                            // Update the max voltage
+                            _ = left.borrow_mut().set_voltage_limit(*max_voltage);
+                            _ = right.borrow_mut().set_voltage_limit(*max_voltage);
+                        }
+                    }
                     {
                         let mut action_owned = action.borrow_mut();
                         if let Some(ref mut action_ref) = *action_owned {
@@ -115,6 +130,26 @@ impl Drivetrain {
                                     }
                                     drivetrain_pair::DrivetrainUnits::RPM => {
                                         // Set the RPM
+                                        if voltage.left > last_left_rpm {
+                                            voltage.left = voltage
+                                                .left
+                                                .min(last_left_rpm + max_acceleration_loop);
+                                        } else if voltage.left < last_left_rpm {
+                                            voltage.left = voltage
+                                                .left
+                                                .max(last_left_rpm - max_acceleration_loop);
+                                        }
+                                        if voltage.right > last_right_rpm {
+                                            voltage.right = voltage
+                                                .right
+                                                .min(last_right_rpm + max_acceleration_loop);
+                                        } else if voltage.right < last_right_rpm {
+                                            voltage.right = voltage
+                                                .right
+                                                .max(last_right_rpm - max_acceleration_loop);
+                                        }
+                                        last_left_rpm = voltage.left;
+                                        last_right_rpm = voltage.right;
                                         if let Err(e) = left.set_velocity(voltage.left as i32) {
                                             log::error!("Failed to set left RPM: {:?}", e);
                                         }
