@@ -31,7 +31,7 @@ impl super::Action for TurnToPointAction {
     fn update(
         &mut self,
         context: super::ActionContext,
-    ) -> Option<crate::subsystems::drivetrain::VoltagePair> {
+    ) -> Option<crate::subsystems::drivetrain::DrivetrainPair> {
         if self.action.is_none() {
             let target_heading =
                 context.pose.angle_to(self.target) + if self.reverse { PI } else { 0.0 };

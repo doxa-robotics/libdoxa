@@ -1,12 +1,12 @@
-use crate::subsystems::drivetrain::VoltagePair;
+use crate::subsystems::drivetrain::DrivetrainPair;
 
 #[derive(Debug)]
 pub struct VoltageAction {
-    pub voltage: VoltagePair,
+    pub voltage: DrivetrainPair,
 }
 
 impl super::Action for VoltageAction {
-    fn update(&mut self, _context: super::ActionContext) -> Option<VoltagePair> {
+    fn update(&mut self, _context: super::ActionContext) -> Option<DrivetrainPair> {
         Some(self.voltage)
     }
 }

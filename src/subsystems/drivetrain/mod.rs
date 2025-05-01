@@ -8,9 +8,9 @@ use crate::utils::pose::Pose;
 use super::tracking::TrackingSubsystem;
 
 pub mod actions;
-mod voltage_pair;
+mod drivetrain_pair;
 
-pub use voltage_pair::VoltagePair;
+pub use drivetrain_pair::DrivetrainPair;
 
 #[allow(clippy::type_complexity)]
 pub struct DrivetrainActionFuture {
@@ -102,13 +102,26 @@ impl Drivetrain {
                                     voltage = voltage.reverse();
                                 }
                                 // Scale the voltage to be under the max voltage
-                                voltage = voltage.max_voltage(*max_voltage.borrow());
-                                // Set the voltage
-                                if let Err(e) = left.set_voltage(voltage.left) {
-                                    log::error!("Failed to set left voltage: {:?}", e);
-                                }
-                                if let Err(e) = right.set_voltage(voltage.right) {
-                                    log::error!("Failed to set right voltage: {:?}", e);
+                                match voltage.units {
+                                    drivetrain_pair::DrivetrainUnits::Voltage => {
+                                        voltage = voltage.max(*max_voltage.borrow());
+                                        // Set the voltage
+                                        if let Err(e) = left.set_voltage(voltage.left) {
+                                            log::error!("Failed to set left voltage: {:?}", e);
+                                        }
+                                        if let Err(e) = right.set_voltage(voltage.right) {
+                                            log::error!("Failed to set right voltage: {:?}", e);
+                                        }
+                                    }
+                                    drivetrain_pair::DrivetrainUnits::RPM => {
+                                        // Set the RPM
+                                        if let Err(e) = left.set_velocity(voltage.left as i32) {
+                                            log::error!("Failed to set left RPM: {:?}", e);
+                                        }
+                                        if let Err(e) = right.set_velocity(voltage.right as i32) {
+                                            log::error!("Failed to set right RPM: {:?}", e);
+                                        }
+                                    }
                                 }
                                 drop(action_owned);
                             } else {
@@ -128,7 +141,7 @@ impl Drivetrain {
         }
     }
 
-    pub fn set_voltage(&mut self, voltage: VoltagePair) {
+    pub fn set_voltage(&mut self, voltage: DrivetrainPair) {
         let mut action = self.action.borrow_mut();
         *action = Some((
             Box::new(actions::VoltageAction { voltage }),

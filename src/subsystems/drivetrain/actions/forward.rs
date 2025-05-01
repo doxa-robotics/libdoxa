@@ -1,6 +1,6 @@
 use pid::Pid;
 
-use crate::utils::settling;
+use crate::{subsystems::drivetrain::DrivetrainPair, utils::settling};
 
 use super::config::ActionConfig;
 
@@ -40,7 +40,7 @@ impl super::Action for ForwardAction {
     fn update(
         &mut self,
         context: super::ActionContext,
-    ) -> Option<crate::subsystems::drivetrain::VoltagePair> {
+    ) -> Option<crate::subsystems::drivetrain::DrivetrainPair> {
         if self.initial_left_offset.is_none() {
             self.initial_left_offset = Some(context.left_offset);
         }
@@ -70,6 +70,6 @@ impl super::Action for ForwardAction {
             context.pose.heading()
         );
 
-        Some(output.into())
+        Some(DrivetrainPair::new_rpm(output, output))
     }
 }

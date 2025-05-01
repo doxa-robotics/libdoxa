@@ -4,7 +4,7 @@ use pid::Pid;
 
 use crate::{
     path_planner::Path,
-    subsystems::drivetrain::VoltagePair,
+    subsystems::drivetrain::DrivetrainPair,
     utils::{pose::Pose, settling::Tolerances},
 };
 
@@ -51,7 +51,7 @@ impl<T: Path> PurePursuitAction<T> {
 }
 
 impl<T: Path> super::Action for PurePursuitAction<T> {
-    fn update(&mut self, context: super::ActionContext) -> Option<VoltagePair> {
+    fn update(&mut self, context: super::ActionContext) -> Option<DrivetrainPair> {
         // If we are settled, we don't need to do anything
         if self.settled {
             return None;
@@ -145,9 +145,10 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             let linear_scalar =
                 turning_linear_scalar_curve(context.pose.heading() - angle_to_target);
             linear_voltage *= linear_scalar;
-            Some(VoltagePair {
+            Some(DrivetrainPair {
                 left: linear_voltage - rotational_voltage,
                 right: linear_voltage + rotational_voltage,
+                units: crate::subsystems::drivetrain::drivetrain_pair::DrivetrainUnits::RPM,
             })
         }
     }

@@ -37,7 +37,7 @@ impl super::Action for RotationAction {
     fn update(
         &mut self,
         context: super::ActionContext,
-    ) -> Option<crate::subsystems::drivetrain::VoltagePair> {
+    ) -> Option<crate::subsystems::drivetrain::DrivetrainPair> {
         if !self.initialized {
             // Normalize the setpoint to the closest direct angle to the current position
             let mut error = self.controller.setpoint - context.pose.heading();
@@ -75,9 +75,10 @@ impl super::Action for RotationAction {
         // );
 
         // Apply the output as a voltage pair for rotation
-        Some(crate::subsystems::drivetrain::VoltagePair {
+        Some(crate::subsystems::drivetrain::DrivetrainPair {
             left: -output,
             right: output,
+            units: crate::subsystems::drivetrain::drivetrain_pair::DrivetrainUnits::RPM,
         })
     }
 }

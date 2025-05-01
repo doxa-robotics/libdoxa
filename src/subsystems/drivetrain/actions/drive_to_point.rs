@@ -1,7 +1,7 @@
 use super::config::ActionConfig;
 use super::BoomerangAction;
 use super::{turn_to_point::TurnToPointAction, Action, ActionContext};
-use crate::subsystems::drivetrain::VoltagePair;
+use crate::subsystems::drivetrain::DrivetrainPair;
 use crate::utils::pose::Pose;
 
 /// An action that drives the robot to a specific point.
@@ -45,7 +45,7 @@ impl DriveToPointAction {
 }
 
 impl Action for DriveToPointAction {
-    fn update(&mut self, context: ActionContext) -> Option<VoltagePair> {
+    fn update(&mut self, context: ActionContext) -> Option<DrivetrainPair> {
         match &mut self.state {
             DriveToPointState::NotStarted => {
                 // Transition to the turning state

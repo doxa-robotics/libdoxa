@@ -19,7 +19,7 @@ mod voltage;
 ///
 /// If an action is done, it should return `None`.
 pub trait Action: Debug {
-    fn update(&mut self, context: ActionContext) -> Option<super::VoltagePair>;
+    fn update(&mut self, context: ActionContext) -> Option<super::DrivetrainPair>;
 }
 
 #[derive(Debug, Clone, Copy)]

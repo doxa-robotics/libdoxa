@@ -3,7 +3,7 @@ use core::f64::consts::PI;
 use pid::Pid;
 
 use crate::{
-    subsystems::drivetrain::VoltagePair,
+    subsystems::drivetrain::DrivetrainPair,
     utils::{pose::Pose, settling::Tolerances},
 };
 
@@ -48,7 +48,7 @@ impl BoomerangAction {
 }
 
 impl super::Action for BoomerangAction {
-    fn update(&mut self, context: super::ActionContext) -> Option<VoltagePair> {
+    fn update(&mut self, context: super::ActionContext) -> Option<DrivetrainPair> {
         let distance = self.target_point.distance(context.pose);
 
         let mut angle_to_target = context.pose.angle_to(self.target_point);
@@ -120,9 +120,10 @@ impl super::Action for BoomerangAction {
         // First, scale the linear voltage.
         let linear_scalar = turning_linear_scalar_curve(context.pose.heading() - angle_to_target);
         linear_voltage *= linear_scalar;
-        Some(VoltagePair {
+        Some(DrivetrainPair {
             left: linear_voltage - rotational_voltage,
             right: linear_voltage + rotational_voltage,
+            units: crate::subsystems::drivetrain::drivetrain_pair::DrivetrainUnits::RPM,
         })
     }
 }

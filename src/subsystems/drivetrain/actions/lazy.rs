@@ -2,7 +2,7 @@ use core::fmt::Debug;
 
 use alloc::boxed::Box;
 
-use crate::{subsystems::drivetrain::VoltagePair, utils::pose::Pose};
+use crate::{subsystems::drivetrain::DrivetrainPair, utils::pose::Pose};
 
 use super::Action;
 
@@ -29,7 +29,7 @@ impl<T: Action> LazyAction<T> {
 }
 
 impl<T: Action> super::Action for LazyAction<T> {
-    fn update(&mut self, context: super::ActionContext) -> Option<VoltagePair> {
+    fn update(&mut self, context: super::ActionContext) -> Option<DrivetrainPair> {
         if self.action.is_none() {
             if let Some(initializer) = self.initializer.take() {
                 self.action = Some(initializer(context.pose));
