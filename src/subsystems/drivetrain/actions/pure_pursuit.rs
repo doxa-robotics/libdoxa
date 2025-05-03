@@ -82,7 +82,7 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
 
             // If we're within the disable seeking distance, let's just start seeking
             // the end of the path
-            if self.target_point.distance(context.pose) < self.disable_seeking_distance {
+            if self.end_pose.distance(context.pose) < self.disable_seeking_distance {
                 self.final_seeking = Some(BoomerangAction::new(self.end_pose, self.config));
                 return None;
             }
@@ -109,13 +109,13 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                     );
                     display.fill(&shape, (0, 255, 0));
                 }
-            } else if self.target_point.distance(context.pose) <= self.lookahead {
+            } else if self.end_pose.distance(context.pose) <= self.lookahead {
                 // If we can't find a target point but we're within the lookahead
                 // distance, we can just use the end of the path
                 self.final_seeking = Some(BoomerangAction::new(self.end_pose, self.config));
             } else {
                 // We can't find a target point and we've strayed too far from the path
-                self.final_seeking = Some(BoomerangAction::new(self.end_pose, self.config));
+                // self.final_seeking = Some(BoomerangAction::new(self.end_pose, self.config));
             }
             // Calculate the angle to the target point
             let mut angle_to_target = context.pose.angle_to(self.target_point);

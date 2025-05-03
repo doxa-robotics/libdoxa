@@ -1,6 +1,7 @@
 use core::{cell::RefCell, future::Future, sync::atomic::AtomicBool};
 
 use alloc::{boxed::Box, rc::Rc};
+use vexide::prelude::BrakeMode;
 use vexide_motorgroup::MotorGroup;
 
 use crate::utils::pose::Pose;
@@ -161,8 +162,8 @@ impl Drivetrain {
                                 drop(action_owned);
                             } else {
                                 // Zero out the motors if the action is done
-                                _ = left.set_voltage(0.0);
-                                _ = right.set_voltage(0.0);
+                                _ = left.brake(BrakeMode::Brake);
+                                _ = right.brake(BrakeMode::Brake);
                                 // Notify the main task that the action is done
                                 action_ref
                                     .1
@@ -170,7 +171,7 @@ impl Drivetrain {
                             }
                         }
                     }
-                    vexide::time::sleep(core::time::Duration::from_millis(10)).await;
+                    vexide::time::sleep(core::time::Duration::from_millis(LOOP_TIME as u64)).await;
                 }
             }),
         }
