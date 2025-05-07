@@ -109,7 +109,9 @@ impl Drivetrain {
                                 pose: position,
                             };
                             // Run the action
-                            if let Some(mut voltage) = action_ref.0.update(context) {
+                            if !action_ref.1.load(core::sync::atomic::Ordering::Acquire)
+                                && let Some(mut voltage) = action_ref.0.update(context)
+                            {
                                 // If the action is still running
                                 if tracking.reverse() {
                                     // Rotate the robot in the opposite direction

@@ -31,6 +31,8 @@ pub struct ActionConfig {
     pub pursuit_turn_limit: f64,
     pub pursuit_lookahead: f64,
 
+    pub boomerang_lock_distance: Option<f64>,
+
     pub linear_error_tolerance: f64,
     pub linear_velocity_tolerance: f64,
     pub linear_tolerance_duration: Duration,
@@ -81,6 +83,16 @@ impl ActionConfig {
             .tolerance_duration(self.turn_tolerance_duration)
             .velocity_tolerance(self.turn_velocity_tolerance)
             .timeout(self.turn_timeout)
+    }
+
+    pub fn with_boomerang_lock_distance(mut self, distance: f64) -> Self {
+        self.boomerang_lock_distance = Some(distance);
+        self
+    }
+
+    pub fn with_boomerang_lock_distance_none(mut self) -> Self {
+        self.boomerang_lock_distance = None;
+        self
     }
 
     // #region: Builder

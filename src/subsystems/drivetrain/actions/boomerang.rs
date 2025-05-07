@@ -37,7 +37,7 @@ impl BoomerangAction {
             left_zero: None,
             right_zero: None,
             rotational_setpoint_initialized: false,
-            settling_distance: 200.0,
+            settling_distance: config.boomerang_lock_distance.unwrap_or(200.0),
         }
     }
 

@@ -61,15 +61,6 @@ impl super::Action for ForwardAction {
 
         let output = self.controller.next_control_output(average_distance).output;
 
-        log::debug!(
-            "Distance: {:.2?} Control output: {:.2?} Error: {:.2?} Setpoint: {:.2?} heading: {:.2?}",
-            average_distance,
-            output,
-            error,
-            self.controller.setpoint,
-            context.pose.heading()
-        );
-
         Some(DrivetrainPair::new_rpm(output, output))
     }
 }
