@@ -12,6 +12,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-lock"
+version = "3.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fd03604047cee9b6ce9de9f70c6cd540a0520c813cbd49bae61f33ab80ed1dc"
+dependencies = [
+ "event-listener",
+ "event-listener-strategy",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "async-task"
 version = "4.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -48,6 +59,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
+name = "concurrent-queue"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ca0197aee26d1ae37445ee532fefce43251d24cc7c166799f4d46817f1d3973"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-utils"
+version = "0.8.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28"
+
+[[package]]
 name = "embedded-graphics"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -69,6 +95,27 @@ dependencies = [
  "az",
  "byteorder",
  "nalgebra 0.30.1",
+]
+
+[[package]]
+name = "event-listener"
+version = "5.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e13b66accf52311f30a0db42147dadea9850cb48cd070028831ae5f5d4b856ab"
+dependencies = [
+ "concurrent-queue",
+ "parking",
+ "pin-project-lite",
+]
+
+[[package]]
+name = "event-listener-strategy"
+version = "0.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8be9f3dfaaffdae2972880079a491a1a8bb7cbed0b8dd7a347f668b4150a3b93"
+dependencies = [
+ "event-listener",
+ "pin-project-lite",
 ]
 
 [[package]]
@@ -94,7 +141,7 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "libdoxa"
-version = "0.1.0-alpha.1"
+version = "0.2.0-alpha.1"
 dependencies = [
  "embedded-graphics",
  "log",
@@ -102,39 +149,21 @@ dependencies = [
  "pid",
  "snafu",
  "tinybmp",
- "vex-sdk",
  "vexide",
- "vexide-embedded-graphics",
  "vexide-motorgroup",
 ]
 
 [[package]]
 name = "libm"
-version = "0.2.11"
+version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8355be11b20d696c8f18f6cc018c4e372165b1fa8126cef092399c9951984ffa"
-
-[[package]]
-name = "lock_api"
-version = "0.4.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07af8b9cdd281b7915f413fa73f29ebd5d55d0d3f0155584dade1ff18cea1b17"
-dependencies = [
- "autocfg",
- "scopeguard",
-]
+checksum = "f9fbbcab51052fe104eb5e5d351cf728d30a5be1fe14d9be8a3b097481fb97de"
 
 [[package]]
 name = "log"
 version = "0.4.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "30bde2b3dc3671ae49d8e2e9f044c7c005836e7a023ee57cffa25ab82764bb9e"
-
-[[package]]
-name = "memchr"
-version = "2.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
 name = "micromath"
@@ -189,15 +218,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "no_std_io"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fa5f306a6f2c01b4fd172f29bb46195b1764061bf926c75e96ff55df3178208"
-dependencies = [
- "memchr",
-]
-
-[[package]]
 name = "num-complex"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -236,6 +256,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "parking"
+version = "2.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f38d5652c16fde515bb1ecef450ab0f6a219d619a7274976324d5e377f7dceba"
+
+[[package]]
 name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -271,6 +297,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "pin-project-lite"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b3cff922bd51709b605d9ead9aa71031d81447142d828eb4a6eba76fe619f9b"
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.94"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -289,12 +321,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "replace_with"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3a8614ee435691de62bcffcf4a66d91b3594bf1428a5722e79103249a095690"
-
-[[package]]
 name = "rgb"
 version = "0.8.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -302,12 +328,6 @@ checksum = "57397d16646700483b67d2dd6511d79318f9d057fdbd21a4066aeac8b41d310a"
 dependencies = [
  "bytemuck",
 ]
-
-[[package]]
-name = "scopeguard"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "simba"
@@ -331,6 +351,15 @@ dependencies = [
  "num-complex",
  "num-traits",
  "paste",
+]
+
+[[package]]
+name = "smart-leds-trait"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7f4441a131924d58da6b83a7ad765c460e64630cce504376c3a87a2558c487f"
+dependencies = [
+ "rgb",
 ]
 
 [[package]]
@@ -388,15 +417,15 @@ checksum = "00e2473a93778eb0bad35909dff6a10d28e63f792f16ed15e404fca9d5eeedbe"
 
 [[package]]
 name = "vex-sdk"
-version = "0.26.0"
+version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be1b586dd8546706564cf20c94bae51c8f9e4891d70360d3fb63d563350df3d1"
+checksum = "79e5fe15afde1305478b35e2cb717fff59f485428534cf49cfdbfa4723379bf6"
 
 [[package]]
 name = "vexide"
-version = "0.7.0"
+version = "0.8.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "537cb5a5a3fc8ff54b611fcbdcb9fb66f0d5e7d96746c5c91d212a09d48bda97"
+checksum = "098f95d027dbaa75a19db9fb36e7b80e2ec4cbf16a3a94f80e5d4ff588f1e6b9"
 dependencies = [
  "vex-sdk",
  "vexide-async",
@@ -406,63 +435,49 @@ dependencies = [
 
 [[package]]
 name = "vexide-async"
-version = "0.1.9"
+version = "0.2.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f18212c1cf2587633f8189e671875ee7cd4a6bff57aa15bfe43f722c6b78363"
+checksum = "dfaa63e67bf9ddc89ccd9939d54f9eac7a86db53df9a7c38b83ab31f39925df2"
 dependencies = [
+ "async-lock",
  "async-task",
  "vex-sdk",
- "vexide-core",
  "waker-fn",
 ]
 
 [[package]]
 name = "vexide-core"
-version = "0.7.0"
+version = "0.8.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b286389834deb4db81e0775a352465f2d2a84d15c5a3d1991bb5cd03c2e6a482"
+checksum = "21b33d7ccfbf19c82849fe87d1fa91641950daccc7e4c7181681f5d4fe2c4317"
 dependencies = [
  "bitflags",
  "futures-core",
- "libm",
- "lock_api",
- "no_std_io",
  "pin-project",
- "replace_with",
- "snafu",
  "vex-sdk",
 ]
 
 [[package]]
 name = "vexide-devices"
-version = "0.7.0"
+version = "0.8.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1efe5b3781a08e3c598ba0072af1a780f3c1db8293e32793084c8ff8459506d9"
+checksum = "2e64f6c970b3aa0ad1e583f1906b725c3aaf7dc45ab1aef5c8ff363416407cfa"
 dependencies = [
  "bitflags",
+ "libm",
  "mint",
- "no_std_io",
  "rgb",
+ "smart-leds-trait",
  "snafu",
  "vex-sdk",
  "vexide-core",
 ]
 
 [[package]]
-name = "vexide-embedded-graphics"
-version = "0.1.0"
-source = "git+https://github.com/zabackary/vexide-embedded-graphics.git?branch=perf%2Fdraw-target-impl#b21eb4c0185765df9cf8c79c32e20de333fdf581"
-dependencies = [
- "embedded-graphics-core",
- "vex-sdk",
- "vexide",
-]
-
-[[package]]
 name = "vexide-motorgroup"
-version = "2.0.1"
+version = "2.2.0-alpha.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69bae81ee474fb41e4182386bcefde7af12cba263becfe16ea833bf1519f2108"
+checksum = "14663ba8a6c649d33802a5d87d1893f1ef93c75ec19728510c7d139d4d326e08"
 dependencies = [
  "vexide",
 ]
