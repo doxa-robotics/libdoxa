@@ -3,7 +3,6 @@ use alloc::vec::Vec;
 
 use crate::path_planner::Path;
 use crate::utils::pose::Pose;
-use vexide::float::Float as _;
 
 #[derive(Debug)]
 /// A struct representing a compound path, which is a collection of paths

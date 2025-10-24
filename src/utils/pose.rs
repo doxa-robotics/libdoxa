@@ -5,7 +5,6 @@ use core::{
 };
 
 use nalgebra::Vector2;
-use vexide::float::Float as _;
 
 /// A struct representing a 2D pose with x, y coordinates and a heading
 /// in radians.
@@ -117,9 +116,9 @@ impl Pose {
     }
 }
 
-impl From<Pose> for vexide::devices::math::Point2<i16> {
-    fn from(pose: Pose) -> vexide::devices::math::Point2<i16> {
-        vexide::devices::math::Point2 {
+impl From<Pose> for vexide::math::Point2<i16> {
+    fn from(pose: Pose) -> vexide::math::Point2<i16> {
+        vexide::math::Point2 {
             x: pose.offset.x as i16,
             y: pose.offset.y as i16,
         }

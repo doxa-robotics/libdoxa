@@ -8,7 +8,7 @@ use crate::{
     utils::{pose::Pose, settling::Tolerances},
 };
 
-use super::{boomerang::turning_linear_scalar_curve, config::ActionConfig, BoomerangAction};
+use super::{BoomerangAction, boomerang::turning_linear_scalar_curve, config::ActionConfig};
 
 #[derive(Debug)]
 pub struct PurePursuitAction<T: Path> {
@@ -99,9 +99,9 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                 #[cfg(feature = "unsafe_debug_render")]
                 {
                     // SAFETY: This is not safe.
-                    let mut display = unsafe { vexide::devices::display::Display::new() };
-                    let shape = vexide::devices::display::Circle::new(
-                        vexide::devices::math::Point2 {
+                    let mut display = unsafe { vexide::display::Display::new() };
+                    let shape = vexide::display::Circle::new(
+                        vexide::math::Point2 {
                             x: (self.target_point.x() * 0.066666667 + 120.0) as i16,
                             y: (120.0 - self.target_point.y() * 0.066666667) as i16,
                         },

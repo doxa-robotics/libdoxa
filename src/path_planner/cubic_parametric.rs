@@ -10,8 +10,6 @@
 //!
 //! The theory behind this can be found [here](http://geogebra.org/calculator/bkujghbu).
 
-use vexide::prelude::Float as _;
-
 use crate::utils::pose::Pose;
 
 use super::Path;
@@ -89,19 +87,19 @@ impl CubicParametricPath {
         Self { x, y }
     }
 
-    pub fn debug_render(&self, display: &mut vexide::devices::display::Display) {
+    pub fn debug_render(&self, display: &mut vexide::display::Display) {
         let dt = 0.01;
         let mut t = 0.0;
         let mut last_point = self.evaluate(0.0);
         while t <= 1.0 {
             let point = self.evaluate(t);
             display.fill(
-                &vexide::devices::display::Line::new(
-                    vexide::devices::math::Point2 {
+                &vexide::display::Line::new(
+                    vexide::math::Point2 {
                         x: (last_point.x()) as i16,
                         y: (last_point.y()) as i16,
                     },
-                    vexide::devices::math::Point2 {
+                    vexide::math::Point2 {
                         x: (point.x()) as i16,
                         y: (point.y()) as i16,
                     },

@@ -97,11 +97,11 @@ impl Drivetrain {
                             let context = actions::ActionContext {
                                 left_offset: left
                                     .position()
-                                    .map(|x| x.as_revolutions() * wheel_circumference)
+                                    .map(|x| x.as_turns() * wheel_circumference)
                                     .unwrap_or(0.0),
                                 right_offset: right
                                     .position()
-                                    .map(|x| x.as_revolutions() * wheel_circumference)
+                                    .map(|x| x.as_turns() * wheel_circumference)
                                     .unwrap_or(0.0),
                                 left_velocity: left.velocity().unwrap_or(0.0) * wheel_circumference,
                                 right_velocity: right.velocity().unwrap_or(0.0)

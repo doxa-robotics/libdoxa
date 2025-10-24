@@ -16,8 +16,7 @@
 //! reached.
 
 use core::time::Duration;
-
-use vexide::time::Instant;
+use std::time::Instant;
 
 /// A utility for determining when a control system has stabilized reasonably near its setpoint.
 ///

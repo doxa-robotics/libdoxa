@@ -2,7 +2,7 @@ use core::{error::Error, f64, fmt::Debug};
 
 use nalgebra::Vector2;
 use snafu::Snafu;
-use vexide::{float::Float, prelude::Position};
+use vexide::math::Angle;
 
 use crate::utils::traits::HasRotation;
 
@@ -24,7 +24,7 @@ pub struct TrackingWheel<T: HasRotation> {
     circumference: f64,
     mounting_offset: f64,
     sensor: T,
-    last_position: Position,
+    last_angle: Angle,
     mounting_direction: TrackingWheelMountingDirection,
 }
 
@@ -39,7 +39,7 @@ impl<T: HasRotation> TrackingWheel<T> {
             circumference,
             mounting_offset,
             mounting_direction,
-            last_position: sensor.position(),
+            last_angle: sensor.position(),
             sensor,
         }
     }
@@ -69,9 +69,9 @@ impl<T: HasRotation> TrackingWheel<T> {
     /// Returns the difference between the last reported position and the current position.
     pub fn delta(&mut self) -> f64 {
         let position = self.sensor.position();
-        let delta = position - self.last_position;
-        self.last_position = position;
-        delta.as_revolutions() * self.circumference
+        let delta = position - self.last_angle;
+        self.last_angle = position;
+        delta.as_turns() * self.circumference
     }
 
     pub fn mounting_offset(&self) -> f64 {

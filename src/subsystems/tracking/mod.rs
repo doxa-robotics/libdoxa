@@ -82,9 +82,9 @@ impl TrackingSubsystem {
                     #[cfg(feature = "unsafe_debug_render")]
                     {
                         // SAFETY: This is not safe.
-                        let mut display = unsafe { vexide::devices::display::Display::new() };
-                        let shape = vexide::devices::display::Circle::new(
-                            vexide::devices::math::Point2 {
+                        let mut display = unsafe { vexide::display::Display::new() };
+                        let shape = vexide::display::Circle::new(
+                            vexide::math::Point2 {
                                 x: (current_pose.borrow().offset.x * 0.066666667 + 120.0) as i16,
                                 y: (120.0 - current_pose.borrow().offset.y * 0.066666667) as i16,
                             },

@@ -1,43 +1,40 @@
 use alloc::rc::Rc;
 use core::cell::RefCell;
-use vexide::{
-    float::Float,
-    prelude::{AdiGyroscope, InertialSensor, Motor, Position, RotationSensor},
-};
+use vexide::{math::Angle, prelude::*};
 use vexide_motorgroup::MotorGroup;
 
 /// Trait for objects that have a rotational position.
 pub trait HasRotation {
     /// Returns the position of the object.
-    fn position(&self) -> Position;
+    fn position(&self) -> Angle;
 }
 
 impl HasRotation for RotationSensor {
-    fn position(&self) -> Position {
+    fn position(&self) -> Angle {
         self.position().unwrap_or_default()
     }
 }
 
 impl HasRotation for Motor {
-    fn position(&self) -> Position {
+    fn position(&self) -> Angle {
         self.position().unwrap_or_default()
     }
 }
 
 impl HasRotation for MotorGroup {
-    fn position(&self) -> Position {
+    fn position(&self) -> Angle {
         self.position().unwrap_or_default()
     }
 }
 
 impl HasRotation for () {
-    fn position(&self) -> Position {
-        Position::default()
+    fn position(&self) -> Angle {
+        Angle::default()
     }
 }
 
 impl<T: HasRotation> HasRotation for Rc<RefCell<T>> {
-    fn position(&self) -> Position {
+    fn position(&self) -> Angle {
         self.borrow().position()
     }
 }
@@ -93,7 +90,7 @@ impl<T: HasWrappingHeading> HasHeading for WrappingHeadingCorrector<T> {
 
 impl HasHeading for InertialSensor {
     fn heading(&self) -> f64 {
-        self.rotation().unwrap_or_default().to_radians()
+        self.rotation().unwrap_or_default().as_radians()
     }
 }
 

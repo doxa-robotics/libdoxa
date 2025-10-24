@@ -1,16 +1,16 @@
 use core::cell::RefCell;
 
 use alloc::rc::Rc;
-use vexide::devices::adi::digital::LogicLevel;
+use vexide::adi::digital::LogicLevel;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PneumaticSubsystem<const N: usize, const LOW_IS_EXTENDED: bool = false> {
-    solenoids: Rc<RefCell<[vexide::devices::adi::AdiDigitalOut; N]>>,
+    solenoids: Rc<RefCell<[vexide::adi::digital::AdiDigitalOut; N]>>,
 }
 
 impl<const N: usize, const LOW_IS_EXTENDED: bool> PneumaticSubsystem<N, LOW_IS_EXTENDED> {
     /// Creates a new `PneumaticSubsystem` with the given solenoids.
-    pub fn new(solenoids: [vexide::devices::adi::AdiDigitalOut; N]) -> Self {
+    pub fn new(solenoids: [vexide::adi::digital::AdiDigitalOut; N]) -> Self {
         const {
             if N == 0 {
                 panic!("Cannot create PneumaticSubsystem with zero solenoids.");
@@ -89,8 +89,8 @@ pub struct MirroredPneumaticSubsystem<const N: usize, const LOW_IS_EXTENDED: boo
 impl<const N: usize, const LOW_IS_EXTENDED: bool> MirroredPneumaticSubsystem<N, LOW_IS_EXTENDED> {
     /// Creates a new `MirroredPneumaticSubsystem` with the given solenoids.
     pub fn new(
-        left_solenoids: [vexide::devices::adi::AdiDigitalOut; N],
-        right_solenoids: [vexide::devices::adi::AdiDigitalOut; N],
+        left_solenoids: [vexide::adi::digital::AdiDigitalOut; N],
+        right_solenoids: [vexide::adi::digital::AdiDigitalOut; N],
         mirrored_state: MirroredState,
     ) -> Self {
         Self {
