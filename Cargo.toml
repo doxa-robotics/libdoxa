@@ -11,11 +11,11 @@ compress = true
 
 [dependencies]
 vexide = "0.8.0-alpha.2"
-vexide-motorgroup = "2.2.0-alpha.4"
+vexide-motorgroup = "2.2.0-alpha.5"
 snafu = { version = "0.8.5", default-features = false, features = [
     "rust_1_81",
 ] }
-log = "0.4.26"
+log = "0.4.28"
 pid = "4.0.0"
 nalgebra = { version = "0.33.2", default-features = false, features = [
     "macros",

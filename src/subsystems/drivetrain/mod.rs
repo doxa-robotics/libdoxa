@@ -1,7 +1,7 @@
 use core::{cell::RefCell, future::Future, sync::atomic::AtomicBool};
 
 use alloc::{boxed::Box, rc::Rc};
-use vexide_motorgroup::MotorGroup;
+use vexide_motorgroup::SharedMotors;
 
 use crate::utils::pose::Pose;
 
@@ -58,8 +58,8 @@ pub struct Drivetrain {
 #[allow(clippy::await_holding_refcell_ref)]
 impl Drivetrain {
     pub fn new(
-        left: Rc<RefCell<MotorGroup>>,
-        right: Rc<RefCell<MotorGroup>>,
+        mut left: SharedMotors,
+        mut right: SharedMotors,
         wheel_circumference: f64,
         max_voltage: f64,
         tracking: Rc<RefCell<TrackingSubsystem>>,
@@ -81,8 +81,8 @@ impl Drivetrain {
                         let max_voltage = max_voltage.borrow();
                         if *max_voltage != last_max_voltage {
                             // Update the max voltage
-                            _ = left.borrow_mut().set_voltage_limit(*max_voltage);
-                            _ = right.borrow_mut().set_voltage_limit(*max_voltage);
+                            _ = left.set_voltage_limit(*max_voltage);
+                            _ = right.set_voltage_limit(*max_voltage);
                         }
                     }
                     {
@@ -91,8 +91,6 @@ impl Drivetrain {
                             // Get the tracking position
                             let tracking = tracking.borrow();
                             let position = tracking.pose();
-                            let mut left = left.borrow_mut();
-                            let mut right = right.borrow_mut();
                             // Assemble the action context
                             let context = actions::ActionContext {
                                 left_offset: left

@@ -161,9 +161,9 @@ checksum = "f9fbbcab51052fe104eb5e5d351cf728d30a5be1fe14d9be8a3b097481fb97de"
 
 [[package]]
 name = "log"
-version = "0.4.26"
+version = "0.4.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30bde2b3dc3671ae49d8e2e9f044c7c005836e7a023ee57cffa25ab82764bb9e"
+checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
 
 [[package]]
 name = "micromath"
@@ -475,9 +475,9 @@ dependencies = [
 
 [[package]]
 name = "vexide-motorgroup"
-version = "2.2.0-alpha.4"
+version = "2.2.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14663ba8a6c649d33802a5d87d1893f1ef93c75ec19728510c7d139d4d326e08"
+checksum = "e9654525c1dbc8d6d287eb0946c41949c358dcf75ae451849adc6af045550acb"
 dependencies = [
  "vexide",
 ]

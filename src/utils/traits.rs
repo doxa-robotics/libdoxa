@@ -1,7 +1,7 @@
 use alloc::rc::Rc;
 use core::cell::RefCell;
 use vexide::{math::Angle, prelude::*};
-use vexide_motorgroup::MotorGroup;
+use vexide_motorgroup::{MotorGroup, SharedMotors};
 
 /// Trait for objects that have a rotational position.
 pub trait HasRotation {
@@ -30,6 +30,12 @@ impl HasRotation for MotorGroup {
 impl HasRotation for () {
     fn position(&self) -> Angle {
         Angle::default()
+    }
+}
+
+impl HasRotation for SharedMotors {
+    fn position(&self) -> Angle {
+        self.position().unwrap_or_default()
     }
 }
 
