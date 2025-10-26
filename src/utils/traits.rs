@@ -45,21 +45,21 @@ impl<T: HasRotation> HasRotation for Rc<RefCell<T>> {
     }
 }
 
-/// Trait for objects that have a heading in radians.
+/// Trait for objects that have a heading.
 pub trait HasHeading {
-    /// Returns the heading of the object in radians. This value does not wrap around.
-    fn heading(&self) -> f64;
+    /// Returns the heading of the object. This value does not wrap around.
+    fn heading(&self) -> Angle;
 }
 
-/// Trait for objects that have a wrapping heading in radians.
+/// Trait for objects that have a wrapping heading.
 pub trait HasWrappingHeading {
-    /// Returns the heading of the object in radians, wrapped to the range [0, 360).
-    fn wrapping_heading(&self) -> f64;
+    /// Returns the heading of the object, wrapped to the range [0, 360).
+    fn wrapping_heading(&self) -> Angle;
 }
 
 impl<T: HasHeading> HasWrappingHeading for T {
-    fn wrapping_heading(&self) -> f64 {
-        self.heading().rem_euclid(2.0 * core::f64::consts::PI)
+    fn wrapping_heading(&self) -> Angle {
+        self.heading().wrapped(Angle::ZERO..Angle::FULL_TURN)
     }
 }
 
@@ -67,22 +67,22 @@ impl<T: HasHeading> HasWrappingHeading for T {
 ///
 /// This will turn a heading that wraps around into an absolute heading.
 pub struct WrappingHeadingCorrector<T: HasWrappingHeading> {
-    last_heading: RefCell<f64>,
-    heading_offset: RefCell<f64>,
+    last_heading: RefCell<Angle>,
+    heading_offset: RefCell<Angle>,
     has_wrapping_heading: T,
 }
 
 impl<T: HasWrappingHeading> HasHeading for WrappingHeadingCorrector<T> {
-    fn heading(&self) -> f64 {
+    fn heading(&self) -> Angle {
         let current_heading = self.has_wrapping_heading.wrapping_heading();
         let last_heading = *self.last_heading.borrow();
         let heading_offset = *self.heading_offset.borrow();
 
         let delta = current_heading - last_heading;
-        let delta = if delta > core::f64::consts::PI {
-            delta - 2.0 * core::f64::consts::PI
-        } else if delta < -core::f64::consts::PI {
-            delta + 2.0 * core::f64::consts::PI
+        let delta = if delta > Angle::from_radians(core::f64::consts::PI) {
+            delta - Angle::from_radians(2.0 * core::f64::consts::PI)
+        } else if delta < -Angle::from_radians(core::f64::consts::PI) {
+            delta + Angle::from_radians(2.0 * core::f64::consts::PI)
         } else {
             delta
         };
@@ -95,19 +95,19 @@ impl<T: HasWrappingHeading> HasHeading for WrappingHeadingCorrector<T> {
 }
 
 impl HasHeading for InertialSensor {
-    fn heading(&self) -> f64 {
-        self.rotation().unwrap_or_default().as_radians()
+    fn heading(&self) -> Angle {
+        self.rotation().unwrap_or_default()
     }
 }
 
 impl HasWrappingHeading for AdiGyroscope {
-    fn wrapping_heading(&self) -> f64 {
-        self.yaw().unwrap_or_default().as_radians()
+    fn wrapping_heading(&self) -> Angle {
+        self.yaw().unwrap_or_default()
     }
 }
 
 impl<T: HasHeading> HasHeading for Rc<RefCell<T>> {
-    fn heading(&self) -> f64 {
+    fn heading(&self) -> Angle {
         self.borrow().heading()
     }
 }

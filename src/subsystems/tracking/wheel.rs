@@ -16,7 +16,8 @@ pub enum TrackingWheelError<T: Debug + Error + 'static> {
 pub enum TrackingWheelMountingDirection {
     /// The tracking wheel is mounted parallel to the robot's forward direction.
     Parallel,
-    /// The tracking wheel is mounted perpendicular to the robot's forward direction.
+    /// The tracking wheel is mounted perpendicular to the robot's forward
+    /// direction.
     Perpendicular,
 }
 
@@ -66,7 +67,8 @@ impl<T: HasRotation> TrackingWheel<T> {
         )
     }
 
-    /// Returns the difference between the last reported position and the current position.
+    /// Returns the difference between the last reported position and the
+    /// current position.
     pub fn delta(&mut self) -> f64 {
         let position = self.sensor.position();
         let delta = position - self.last_angle;
@@ -86,26 +88,26 @@ impl<T: HasRotation> TrackingWheel<T> {
     ///
     /// The frame of reference for the local delta is the y axis facing
     /// in the direction of forward travel.
-    pub fn local_delta(&mut self, heading_delta: f64) -> Vector2<f64> {
+    pub fn local_delta(&mut self, heading_delta: Angle) -> Vector2<f64> {
         match self.mounting_direction {
             TrackingWheelMountingDirection::Parallel => {
-                if heading_delta == 0.0 {
+                if heading_delta == Angle::ZERO {
                     Vector2::new(0.0, self.delta())
                 } else {
                     Vector2::new(
                         0.0,
                         2.0 * (-heading_delta / 2.0).sin()
-                            * (self.delta() / -heading_delta + self.mounting_offset()),
+                            * (self.delta() / -heading_delta.as_radians() + self.mounting_offset()),
                     )
                 }
             }
             TrackingWheelMountingDirection::Perpendicular => {
-                if heading_delta == 0.0 {
+                if heading_delta == Angle::ZERO {
                     Vector2::new(self.delta(), 0.0)
                 } else {
                     Vector2::new(
                         2.0 * (-heading_delta / 2.0).sin()
-                            * (self.delta() / -heading_delta + self.mounting_offset()),
+                            * (self.delta() / -heading_delta.as_radians() + self.mounting_offset()),
                         0.0,
                     )
                 }
