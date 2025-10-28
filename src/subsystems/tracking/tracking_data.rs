@@ -13,6 +13,7 @@ pub struct TrackingData {
     pub angular_velocity: Angle,
 
     pub timestamp: Option<std::time::Instant>,
+    pub dt: std::time::Duration,
 }
 
 impl TrackingData {
@@ -35,6 +36,7 @@ impl TrackingData {
                 velocity,
                 angular_velocity,
                 timestamp: Some(now),
+                dt: now.duration_since(old_timestamp),
             }
         } else {
             Self {
@@ -43,6 +45,7 @@ impl TrackingData {
                 velocity: Vector2::default(),
                 angular_velocity: Angle::default(),
                 timestamp: Some(std::time::Instant::now()),
+                dt: std::time::Duration::default(),
             }
         }
     }

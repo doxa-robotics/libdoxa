@@ -2,13 +2,13 @@ use core::fmt::Debug;
 
 use alloc::boxed::Box;
 
-use crate::{subsystems::drivetrain::DrivetrainPair, utils::pose::Pose};
+use crate::subsystems::{drivetrain::DrivetrainPair, tracking::TrackingData};
 
 use super::Action;
 
 pub struct LazyAction<T: Action> {
     action: Option<T>,
-    initializer: Option<Box<dyn FnOnce(Pose) -> T + 'static>>,
+    initializer: Option<Box<dyn FnOnce(TrackingData) -> T + 'static>>,
 }
 
 impl<T: Action> Debug for LazyAction<T> {
@@ -20,7 +20,7 @@ impl<T: Action> Debug for LazyAction<T> {
 }
 
 impl<T: Action> LazyAction<T> {
-    pub fn new(initializer: impl FnOnce(Pose) -> T + 'static) -> Self {
+    pub fn new(initializer: impl FnOnce(TrackingData) -> T + 'static) -> Self {
         Self {
             action: None,
             initializer: Some(Box::new(initializer)),
@@ -30,10 +30,10 @@ impl<T: Action> LazyAction<T> {
 
 impl<T: Action> super::Action for LazyAction<T> {
     fn update(&mut self, context: super::ActionContext) -> Option<DrivetrainPair> {
-        if self.action.is_none() {
-            if let Some(initializer) = self.initializer.take() {
-                self.action = Some(initializer(context.pose));
-            }
+        if self.action.is_none()
+            && let Some(initializer) = self.initializer.take()
+        {
+            self.action = Some(initializer(context.data));
         }
 
         if let Some(action) = &mut self.action {

@@ -3,7 +3,7 @@ use core::{cell::RefCell, future::Future, sync::atomic::AtomicBool};
 use alloc::{boxed::Box, rc::Rc};
 use vexide_motorgroup::SharedMotors;
 
-use crate::utils::pose::Pose;
+use crate::subsystems::tracking::TrackingData;
 
 use super::tracking::TrackingSubsystem;
 
@@ -18,7 +18,7 @@ const LOOP_TIME: f64 = 10.0; // ms
 pub struct DrivetrainActionFuture {
     settled: Rc<AtomicBool>,
     tracking: Rc<RefCell<TrackingSubsystem>>,
-    callback: Option<RefCell<Box<dyn FnMut(Pose)>>>,
+    callback: Option<RefCell<Box<dyn FnMut(TrackingData)>>>,
 }
 
 impl Future for DrivetrainActionFuture {
@@ -33,7 +33,7 @@ impl Future for DrivetrainActionFuture {
         } else {
             cx.waker().wake_by_ref();
             if let Some(callback) = &self.callback {
-                (callback.borrow_mut())(self.tracking.borrow().pose());
+                (callback.borrow_mut())(self.tracking.borrow().current());
             }
             core::task::Poll::Pending
         }
@@ -41,7 +41,7 @@ impl Future for DrivetrainActionFuture {
 }
 
 impl DrivetrainActionFuture {
-    pub fn with_callback(mut self, callback: impl FnMut(Pose) + 'static) -> Self {
+    pub fn with_callback(mut self, callback: impl FnMut(TrackingData) + 'static) -> Self {
         self.callback = Some(RefCell::new(Box::new(callback)));
         self
     }
@@ -60,7 +60,6 @@ impl Drivetrain {
     pub fn new(
         mut left: SharedMotors,
         mut right: SharedMotors,
-        wheel_circumference: f64,
         max_voltage: f64,
         tracking: Rc<RefCell<TrackingSubsystem>>,
         max_acceleration: f64, // rpm/s
@@ -90,22 +89,9 @@ impl Drivetrain {
                         if let Some(ref mut action_ref) = *action_owned {
                             // Get the tracking position
                             let tracking = tracking.borrow();
-                            let position = tracking.pose();
+                            let data = tracking.current();
                             // Assemble the action context
-                            let context = actions::ActionContext {
-                                left_offset: left
-                                    .position()
-                                    .map(|x| x.as_turns() * wheel_circumference)
-                                    .unwrap_or(0.0),
-                                right_offset: right
-                                    .position()
-                                    .map(|x| x.as_turns() * wheel_circumference)
-                                    .unwrap_or(0.0),
-                                left_velocity: left.velocity().unwrap_or(0.0) * wheel_circumference,
-                                right_velocity: right.velocity().unwrap_or(0.0)
-                                    * wheel_circumference,
-                                pose: position,
-                            };
+                            let context = actions::ActionContext { data };
                             // Run the action
                             if !action_ref.1.load(core::sync::atomic::Ordering::Acquire)
                                 && let Some(mut voltage) = action_ref.0.update(context)

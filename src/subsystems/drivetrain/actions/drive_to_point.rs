@@ -1,8 +1,9 @@
-use super::config::ActionConfig;
+use nalgebra::Point2;
+
 use super::BoomerangAction;
-use super::{turn_to_point::TurnToPointAction, Action, ActionContext};
+use super::config::ActionConfig;
+use super::{Action, ActionContext, turn_to_point::TurnToPointAction};
 use crate::subsystems::drivetrain::DrivetrainPair;
-use crate::utils::pose::Pose;
 
 /// An action that drives the robot to a specific point.
 ///
@@ -11,7 +12,7 @@ use crate::utils::pose::Pose;
 /// heading of the target pose.
 #[derive(Debug)]
 pub struct DriveToPointAction {
-    target: Pose,
+    target: Point2<f64>,
     reverse: bool,
     state: DriveToPointState,
     turn_config: super::config::ActionConfig,
@@ -28,7 +29,7 @@ enum DriveToPointState {
 }
 
 impl DriveToPointAction {
-    pub fn new(target: Pose, reverse: bool, config: ActionConfig) -> Self {
+    pub fn new(target: Point2<f64>, reverse: bool, config: ActionConfig) -> Self {
         Self {
             target,
             reverse,

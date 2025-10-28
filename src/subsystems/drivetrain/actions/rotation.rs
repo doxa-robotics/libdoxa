@@ -7,7 +7,8 @@ use super::config::ActionConfig;
 
 /// An action that rotates the drivetrain to a specific absolute heading.
 ///
-/// This action uses a PID controller to rotate the drivetrain to a target heading.
+/// This action uses a PID controller to rotate the drivetrain to a target
+/// heading.
 #[derive(Debug)]
 pub struct RotationAction {
     controller: Pid<f64>,
@@ -40,7 +41,7 @@ impl super::Action for RotationAction {
     ) -> Option<crate::subsystems::drivetrain::DrivetrainPair> {
         if !self.initialized {
             // Normalize the setpoint to the closest direct angle to the current position
-            let mut error = self.controller.setpoint - context.pose.heading();
+            let mut error = self.controller.setpoint - context.data.heading.as_radians();
             while error > PI {
                 self.controller.setpoint -= 2.0 * PI;
                 error -= 2.0 * PI;
@@ -52,18 +53,15 @@ impl super::Action for RotationAction {
             self.initialized = true; // Mark as initialized
         }
 
-        let error = self.controller.setpoint - context.pose.heading();
+        let error = self.controller.setpoint - context.data.heading.as_radians();
 
-        if self
-            .tolerances
-            .check(error, context.left_velocity - context.right_velocity)
-        {
+        if self.tolerances.check(error, context.data.linear_velocity()) {
             return None;
         }
 
         let output = self
             .controller
-            .next_control_output(context.pose.heading())
+            .next_control_output(context.data.heading.as_radians())
             .output;
 
         // log::debug!(

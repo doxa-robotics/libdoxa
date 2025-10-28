@@ -1,11 +1,11 @@
 use core::f64::consts::PI;
 
+use nalgebra::Point2;
 use pid::Pid;
+use vexide::math::Angle;
 
 use crate::{
-    path_planner::Path,
-    subsystems::drivetrain::DrivetrainPair,
-    utils::{pose::Pose, settling::Tolerances},
+    path_planner::Path, subsystems::drivetrain::DrivetrainPair, utils::settling::Tolerances,
 };
 
 use super::{BoomerangAction, boomerang::turning_linear_scalar_curve, config::ActionConfig};
@@ -20,10 +20,10 @@ pub struct PurePursuitAction<T: Path> {
     linear_tolerances: Tolerances,
     last_t: f64,
     last_path_distance: f64,
-    target_point: Pose,
+    target_point: Point2<f64>,
     lookahead: f64,
     settled: bool,
-    end_pose: Pose,
+    end_point: Point2<f64>,
     final_seeking: Option<BoomerangAction>,
     config: ActionConfig,
 }
@@ -32,7 +32,7 @@ impl<T: Path> PurePursuitAction<T> {
     pub fn new(path: T, disable_seeking_distance: Option<f64>, config: ActionConfig) -> Self {
         let path_total = path.length();
         Self {
-            end_pose: path.evaluate(1.0),
+            end_point: path.evaluate(1.0),
             path_total,
             disable_seeking_distance: disable_seeking_distance.unwrap_or(0.0),
             target_point: path.evaluate(0.0),
@@ -60,14 +60,14 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             action.update(context)
         } else {
             // Find the closest point on the path to the current pose
-            let current_t = self
-                .path
-                .closest_point(context.pose, Some(self.last_t), Some(0.1));
+            let current_t =
+                self.path
+                    .closest_point(context.data.offset, Some(self.last_t), Some(0.1));
             // Find how far along the path we are
             let path_distance = self.path.length_until(current_t);
             // Calculate the distance and velocity to the end of the path
             let error = self.path_total - path_distance;
-            let velocity = (context.left_velocity + context.right_velocity) / 2.0;
+            let velocity = context.data.linear_velocity();
             // Are we there yet?
             if self.linear_tolerances.check(error, velocity) {
                 self.settled = true;
@@ -82,8 +82,10 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
 
             // If we're within the disable seeking distance, let's just start seeking
             // the end of the path
-            if self.target_point.distance(context.pose) < self.disable_seeking_distance {
-                self.final_seeking = Some(BoomerangAction::new(self.end_pose, self.config));
+            if nalgebra::distance(&self.target_point, &context.data.offset)
+                < self.disable_seeking_distance
+            {
+                self.final_seeking = Some(BoomerangAction::new(self.end_point, self.config));
                 return None;
             }
 
@@ -93,7 +95,7 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             // Calculate the angle to the target point
             if let Some(target_t) =
                 self.path
-                    .point_on_radius(context.pose, self.lookahead, Some(current_t))
+                    .point_on_radius(context.data.offset, self.lookahead, Some(current_t))
             {
                 self.target_point = self.path.evaluate(target_t);
                 #[cfg(feature = "unsafe_debug_render")]
@@ -102,35 +104,37 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                     let mut display = unsafe { vexide::display::Display::new() };
                     let shape = vexide::display::Circle::new(
                         vexide::math::Point2 {
-                            x: (self.target_point.x() * 0.066666667 + 120.0) as i16,
-                            y: (120.0 - self.target_point.y() * 0.066666667) as i16,
+                            x: (self.target_point.x * 0.066666667 + 120.0) as i16,
+                            y: (120.0 - self.target_point.y * 0.066666667) as i16,
                         },
                         1,
                     );
                     display.fill(&shape, (0, 255, 0));
                 }
-            } else if self.target_point.distance(context.pose) <= self.lookahead {
+            } else if nalgebra::distance(&self.target_point, &context.data.offset) <= self.lookahead
+            {
                 // If we can't find a target point but we're within the lookahead
                 // distance, we can just use the end of the path
-                self.final_seeking = Some(BoomerangAction::new(self.end_pose, self.config));
+                self.final_seeking = Some(BoomerangAction::new(self.end_point, self.config));
             } else {
                 // We can't find a target point and we've strayed too far from the path
-                self.final_seeking = Some(BoomerangAction::new(self.end_pose, self.config));
+                self.final_seeking = Some(BoomerangAction::new(self.end_point, self.config));
             }
             // Calculate the angle to the target point
-            let mut angle_to_target = context.pose.angle_to(self.target_point);
+            let mut angle_to_target = (self.target_point.y - context.data.offset.y)
+                .atan2(self.target_point.x - context.data.offset.x);
             // Adjust angle_to_target to be closest to the context.pose.heading()
-            while angle_to_target - context.pose.heading() > PI {
+            while angle_to_target - context.data.heading.as_radians() > PI {
                 angle_to_target -= 2.0 * PI;
             }
-            while angle_to_target - context.pose.heading() < -PI {
+            while angle_to_target - context.data.heading.as_radians() < -PI {
                 angle_to_target += 2.0 * PI;
             }
 
-            if angle_to_target - context.pose.heading() > PI / 2.0 {
+            if angle_to_target - context.data.heading.as_radians() > PI / 2.0 {
                 angle_to_target -= PI;
                 linear_voltage = -linear_voltage;
-            } else if angle_to_target - context.pose.heading() < -PI / 2.0 {
+            } else if angle_to_target - context.data.heading.as_radians() < -PI / 2.0 {
                 angle_to_target += PI;
                 linear_voltage = -linear_voltage;
             }
@@ -138,12 +142,13 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             self.rotational_pid.setpoint(angle_to_target);
             let rotational_voltage = self
                 .rotational_pid
-                .next_control_output(context.pose.heading())
+                .next_control_output(context.data.heading.as_radians())
                 .output;
 
             // First, scale the linear voltage.
-            let linear_scalar =
-                turning_linear_scalar_curve(context.pose.heading() - angle_to_target);
+            let linear_scalar = turning_linear_scalar_curve(Angle::from_radians(
+                context.data.heading.as_radians() - angle_to_target,
+            ));
             linear_voltage *= linear_scalar;
             Some(DrivetrainPair {
                 left: linear_voltage - rotational_voltage,

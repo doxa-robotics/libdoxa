@@ -1,3 +1,4 @@
+use nalgebra::Point2;
 use pid::Pid;
 
 use crate::{subsystems::drivetrain::DrivetrainPair, utils::settling};
@@ -6,14 +7,14 @@ use super::config::ActionConfig;
 
 /// An action that drives the robot forward a certain distance.
 ///
-/// This action uses a PID controller to drive the robot forward a certain distance.
+/// This action uses a PID controller to drive the robot forward a certain
+/// distance.
 #[derive(Debug)]
 pub struct ForwardAction {
     controller: Pid<f64>,
     tolerances: settling::Tolerances,
 
-    initial_left_offset: Option<f64>,
-    initial_right_offset: Option<f64>,
+    initial_point: Option<Point2<f64>>,
 }
 
 impl ForwardAction {
@@ -22,8 +23,7 @@ impl ForwardAction {
         Self {
             controller,
             tolerances: config.linear_tolerances(),
-            initial_left_offset: None,
-            initial_right_offset: None,
+            initial_point: None,
         }
     }
 
@@ -41,25 +41,18 @@ impl super::Action for ForwardAction {
         &mut self,
         context: super::ActionContext,
     ) -> Option<crate::subsystems::drivetrain::DrivetrainPair> {
-        if self.initial_left_offset.is_none() {
-            self.initial_left_offset = Some(context.left_offset);
+        if self.initial_point.is_none() {
+            self.initial_point = Some(context.data.offset);
         }
-        if self.initial_right_offset.is_none() {
-            self.initial_right_offset = Some(context.right_offset);
-        }
-        let average_distance = (context.left_offset - self.initial_left_offset.unwrap_or(0.0)
-            + context.right_offset
-            - self.initial_right_offset.unwrap_or(0.0))
-            / 2.0;
-        let error = self.controller.setpoint - average_distance;
-        if self.tolerances.check(
-            error,
-            (context.left_velocity + context.right_velocity) / 2.0,
-        ) {
+
+        let travelled = context.data.offset - self.initial_point.unwrap();
+        let distance = travelled.norm();
+        let error = self.controller.setpoint - distance;
+        if self.tolerances.check(error, context.data.linear_velocity()) {
             return None;
         }
 
-        let output = self.controller.next_control_output(average_distance).output;
+        let output = self.controller.next_control_output(distance).output;
 
         Some(DrivetrainPair::new_rpm(output, output))
     }

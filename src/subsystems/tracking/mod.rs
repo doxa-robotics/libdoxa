@@ -13,11 +13,11 @@ mod tracking_data;
 pub mod wheel;
 pub use tracking_data::TrackingData;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TrackingSubsystem {
     current: Rc<RefCell<TrackingData>>,
     reverse: Rc<RefCell<bool>>,
-    _task: vexide::task::Task<()>,
+    _task: Rc<vexide::task::Task<()>>,
 }
 
 impl TrackingSubsystem {
@@ -47,7 +47,7 @@ impl TrackingSubsystem {
         Self {
             current: current.clone(),
             reverse: Rc::new(RefCell::new(false)),
-            _task: vexide::task::spawn(async move {
+            _task: Rc::new(vexide::task::spawn(async move {
                 // The raw heading is the heading from the heading sensor,
                 // before any transformations.
                 let mut last_raw_heading = heading_sensor.heading();
@@ -107,7 +107,7 @@ impl TrackingSubsystem {
                     }
                     vexide::time::sleep(RotationSensor::UPDATE_INTERVAL).await;
                 }
-            }),
+            })),
         }
     }
 
@@ -141,6 +141,7 @@ impl TrackingSubsystem {
             velocity: Vector2::default(),
             angular_velocity: Angle::default(),
             timestamp: Some(std::time::Instant::now()),
+            dt: std::time::Duration::default(),
         };
         *self.current.borrow_mut() = if *self.reverse.borrow() {
             TrackingData {

@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use crate::utils::pose::Pose;
+use crate::subsystems::tracking::TrackingData;
 
 mod boomerang;
 pub mod config;
@@ -24,15 +24,7 @@ pub trait Action: Debug {
 
 #[derive(Debug, Clone, Copy)]
 pub struct ActionContext {
-    pub pose: Pose,
-    #[deprecated(note = "Use `pose` instead")]
-    pub left_offset: f64,
-    #[deprecated(note = "Use `pose` instead")]
-    pub right_offset: f64,
-    #[deprecated(note = "Use `pose` instead")]
-    pub left_velocity: f64,
-    #[deprecated(note = "Use `pose` instead")]
-    pub right_velocity: f64,
+    pub data: TrackingData,
 }
 
 pub use boomerang::BoomerangAction;
