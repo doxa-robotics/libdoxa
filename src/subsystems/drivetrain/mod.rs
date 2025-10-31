@@ -17,9 +17,13 @@ const LOOP_TIME: f64 = 10.0; // ms
 #[allow(clippy::type_complexity)]
 pub struct DrivetrainActionFuture {
     settled: Rc<AtomicBool>,
-    tracking: Rc<RefCell<TrackingSubsystem>>,
+    tracking: TrackingSubsystem,
     callback: Option<RefCell<Box<dyn FnMut(TrackingData)>>>,
 }
+
+// SAFETY: single-threaded
+unsafe impl Send for DrivetrainActionFuture {}
+unsafe impl Sync for DrivetrainActionFuture {}
 
 impl Future for DrivetrainActionFuture {
     type Output = ();
@@ -33,7 +37,7 @@ impl Future for DrivetrainActionFuture {
         } else {
             cx.waker().wake_by_ref();
             if let Some(callback) = &self.callback {
-                (callback.borrow_mut())(self.tracking.borrow().current());
+                (callback.borrow_mut())(self.tracking.current());
             }
             core::task::Poll::Pending
         }
@@ -51,9 +55,13 @@ impl DrivetrainActionFuture {
 pub struct Drivetrain {
     action: Rc<RefCell<Option<(Box<dyn actions::Action>, Rc<AtomicBool>)>>>,
     max_voltage: Rc<RefCell<f64>>,
-    tracking: Rc<RefCell<TrackingSubsystem>>,
+    tracking: TrackingSubsystem,
     _task: vexide::task::Task<()>,
 }
+
+// SAFETY: vex is single-threaded
+unsafe impl Send for Drivetrain {}
+unsafe impl Sync for Drivetrain {}
 
 #[allow(clippy::await_holding_refcell_ref)]
 impl Drivetrain {
@@ -61,7 +69,7 @@ impl Drivetrain {
         mut left: SharedMotors,
         mut right: SharedMotors,
         max_voltage: f64,
-        tracking: Rc<RefCell<TrackingSubsystem>>,
+        tracking: TrackingSubsystem,
         max_acceleration: f64, // rpm/s
     ) -> Self {
         let max_acceleration_loop = max_acceleration * LOOP_TIME / 1000.0;
@@ -88,7 +96,6 @@ impl Drivetrain {
                         let mut action_owned = action.borrow_mut();
                         if let Some(ref mut action_ref) = *action_owned {
                             // Get the tracking position
-                            let tracking = tracking.borrow();
                             let data = tracking.current();
                             // Assemble the action context
                             let context = actions::ActionContext { data };
