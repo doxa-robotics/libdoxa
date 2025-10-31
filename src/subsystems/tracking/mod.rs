@@ -61,7 +61,12 @@ impl TrackingSubsystem {
                         current.heading
                         // current is implicitly dropped here
                     };
-                    let heading = last_heading + heading_delta;
+                    // TODO: avoid adding the delta to avoid precision issues
+                    // We subtract the heading delta to get the new heading
+                    // because we use mathematical positive rotation (CCW) but
+                    // the heading sensor uses CW as positive rotation.
+                    let heading = last_heading - heading_delta;
+
                     // Average the heading and displacement of the tracking wheels
                     let average_heading = (heading + last_heading) / 2.0;
                     let average_displacement: Vector2<_> =
