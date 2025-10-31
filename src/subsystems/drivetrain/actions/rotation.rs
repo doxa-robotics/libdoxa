@@ -55,11 +55,14 @@ impl super::Action for RotationAction {
 
         let error = self.controller.setpoint - context.data.heading.as_radians();
 
-        if self.tolerances.check(error, context.data.linear_velocity()) {
+        if self
+            .tolerances
+            .check(error, context.data.angular_velocity.as_radians())
+        {
             return None;
         }
 
-        let output = self
+        let output = -self
             .controller
             .next_control_output(context.data.heading.as_radians())
             .output;
