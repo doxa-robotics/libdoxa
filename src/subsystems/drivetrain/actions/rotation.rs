@@ -62,7 +62,7 @@ impl super::Action for RotationAction {
             return None;
         }
 
-        let output = -self
+        let output = self
             .controller
             .next_control_output(context.data.heading.as_radians())
             .output;

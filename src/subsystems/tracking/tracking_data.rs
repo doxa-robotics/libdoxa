@@ -14,6 +14,8 @@ pub struct TrackingData {
 
     pub timestamp: Option<std::time::Instant>,
     pub dt: std::time::Duration,
+
+    pub(crate) raw_heading: Option<Angle>,
 }
 
 impl TrackingData {
@@ -23,7 +25,12 @@ impl TrackingData {
     ///
     /// If the old timestamp is `None`, `velocity` and `angular_velocity` will
     /// be set to zero.
-    pub(crate) fn advance(&self, new_offset: Point2<f64>, new_heading: Angle) -> Self {
+    pub(crate) fn advance(
+        &self,
+        new_offset: Point2<f64>,
+        new_heading: Angle,
+        new_raw_heading: Angle,
+    ) -> Self {
         let new_heading = new_heading.wrapped(Angle::ZERO..Angle::FULL_TURN);
         if let Some(old_timestamp) = self.timestamp {
             let now = std::time::Instant::now();
@@ -37,6 +44,7 @@ impl TrackingData {
                 angular_velocity,
                 timestamp: Some(now),
                 dt: now.duration_since(old_timestamp),
+                raw_heading: Some(new_raw_heading),
             }
         } else {
             Self {
@@ -46,6 +54,7 @@ impl TrackingData {
                 angular_velocity: Angle::default(),
                 timestamp: Some(std::time::Instant::now()),
                 dt: std::time::Duration::default(),
+                raw_heading: Some(new_raw_heading),
             }
         }
     }

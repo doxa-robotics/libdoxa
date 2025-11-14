@@ -17,6 +17,8 @@ pub use tracking_data::TrackingData;
 pub struct TrackingSubsystem {
     current: Rc<RefCell<TrackingData>>,
     reverse: Rc<RefCell<bool>>,
+    gyro_calibrating: Rc<RefCell<bool>>,
+    heading_offset: Rc<RefCell<Angle>>,
     _task: Rc<vexide::task::Task<()>>,
 }
 
@@ -44,16 +46,21 @@ impl TrackingSubsystem {
             .into_iter()
             .collect::<Vec<wheel::TrackingWheel<LT>>>();
         let current = Rc::new(RefCell::new(TrackingData::default()));
+        let gyro_calibrating = Rc::new(RefCell::new(false));
+        let heading_offset = Rc::new(RefCell::new(Angle::default()));
         Self {
             current: current.clone(),
             reverse: Rc::new(RefCell::new(false)),
+            gyro_calibrating: gyro_calibrating.clone(),
+            heading_offset: heading_offset.clone(),
             _task: Rc::new(vexide::task::spawn(async move {
                 // The raw heading is the heading from the heading sensor,
                 // before any transformations.
                 let mut last_raw_heading = heading_sensor.heading();
                 loop {
                     let raw_heading = heading_sensor.heading();
-                    let heading_delta = raw_heading - last_raw_heading;
+                    // opposite because of CCW vs CW
+                    let heading_delta = last_raw_heading - raw_heading;
                     last_raw_heading = raw_heading;
 
                     let last_heading = {
@@ -65,7 +72,7 @@ impl TrackingSubsystem {
                     // We subtract the heading delta to get the new heading
                     // because we use mathematical positive rotation (CCW) but
                     // the heading sensor uses CW as positive rotation.
-                    let heading = last_heading - heading_delta;
+                    let heading = -(raw_heading/* + *heading_offset.borrow() */);
 
                     // Average the heading and displacement of the tracking wheels
                     let average_heading = (heading + last_heading) / 2.0;
@@ -92,6 +99,7 @@ impl TrackingSubsystem {
                         *current = current.advance(
                             current.offset + rotation_matrix * average_displacement,
                             average_heading,
+                            raw_heading,
                         );
                     }
                     // TODO: add a way to pass a debug renderer directly to the
@@ -110,6 +118,9 @@ impl TrackingSubsystem {
                         );
                         display.fill(&shape, (255, 0, 0));
                     }
+
+                    gyro_calibrating.replace(heading_sensor.is_calibrating());
+
                     vexide::time::sleep(RotationSensor::UPDATE_INTERVAL).await;
                 }
             })),
@@ -140,6 +151,13 @@ impl TrackingSubsystem {
     /// Note that this in the transformed coordinate system used by the
     /// `reverse` function.
     pub fn set_current(&mut self, offset: Point2<f64>, heading: Angle) {
+        let current_raw_heading = {
+            let current = self.current.borrow();
+            current.raw_heading.unwrap_or_default()
+            // current is implicitly dropped here
+        };
+        // Adjust the heading offset to make the new heading correct
+        *self.heading_offset.borrow_mut() = (-heading) - current_raw_heading;
         let data = TrackingData {
             offset,
             heading,
@@ -147,6 +165,7 @@ impl TrackingSubsystem {
             angular_velocity: Angle::default(),
             timestamp: Some(std::time::Instant::now()),
             dt: std::time::Duration::default(),
+            raw_heading: Some(current_raw_heading),
         };
         *self.current.borrow_mut() = if *self.reverse.borrow() {
             TrackingData {
@@ -179,5 +198,10 @@ impl TrackingSubsystem {
     /// driver control.
     pub fn set_reverse(&mut self, reverse: bool) {
         *self.reverse.borrow_mut() = reverse;
+    }
+
+    /// Returns whether the gyro is currently calibrating.
+    pub fn is_gyro_calibrating(&self) -> bool {
+        *self.gyro_calibrating.borrow()
     }
 }

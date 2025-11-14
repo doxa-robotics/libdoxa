@@ -49,6 +49,11 @@ impl<T: HasRotation> HasRotation for Rc<RefCell<T>> {
 pub trait HasHeading {
     /// Returns the heading of the object. This value does not wrap around.
     fn heading(&self) -> Angle;
+
+    /// Returns whether the heading sensor is currently calibrating.
+    fn is_calibrating(&self) -> bool {
+        false
+    }
 }
 
 /// Trait for objects that have a wrapping heading.
@@ -97,6 +102,10 @@ impl<T: HasWrappingHeading> HasHeading for WrappingHeadingCorrector<T> {
 impl HasHeading for InertialSensor {
     fn heading(&self) -> Angle {
         self.rotation().unwrap_or_default()
+    }
+
+    fn is_calibrating(&self) -> bool {
+        self.is_calibrating().unwrap_or(false)
     }
 }
 

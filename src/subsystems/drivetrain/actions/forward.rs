@@ -46,7 +46,11 @@ impl super::Action for ForwardAction {
         }
 
         let travelled = context.data.offset - self.initial_point.unwrap();
-        let distance = travelled.norm();
+        let mut distance = travelled.norm();
+        if self.controller.setpoint < 0.0 {
+            // If we are going backwards, invert the distance
+            distance *= -1.0;
+        }
         let error = self.controller.setpoint - distance;
         if self.tolerances.check(error, context.data.linear_velocity()) {
             return None;
