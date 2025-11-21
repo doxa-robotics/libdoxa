@@ -31,7 +31,6 @@ impl TrackingData {
         new_heading: Angle,
         new_raw_heading: Angle,
     ) -> Self {
-        let new_heading = new_heading.wrapped(Angle::ZERO..Angle::FULL_TURN);
         if let Some(old_timestamp) = self.timestamp {
             let now = std::time::Instant::now();
             let dt = now.duration_since(old_timestamp).as_secs_f64();
