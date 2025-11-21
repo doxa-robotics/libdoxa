@@ -19,6 +19,7 @@ mod voltage;
 ///
 /// If an action is done, it should return `None`.
 pub trait Action: Debug {
+    /// Updates the action and returns the desired drivetrain output.
     fn update(&mut self, context: ActionContext) -> Option<super::DrivetrainPair>;
 }
 
