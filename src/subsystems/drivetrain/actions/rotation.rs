@@ -13,7 +13,6 @@ use super::config::ActionConfig;
 pub struct RotationAction {
     controller: Pid<f64>,
     tolerances: settling::Tolerances,
-    initialized: bool, // Flag to track if the setpoint has been normalized
 }
 
 impl RotationAction {
@@ -21,7 +20,6 @@ impl RotationAction {
         Self {
             controller: config.turn_pid(target_radians),
             tolerances: config.turn_tolerances(),
-            initialized: false, // Initialize the flag to false
         }
     }
 
@@ -39,21 +37,10 @@ impl super::Action for RotationAction {
         &mut self,
         context: super::ActionContext,
     ) -> Option<crate::subsystems::drivetrain::DrivetrainPair> {
-        if !self.initialized {
-            // Normalize the setpoint to the closest direct angle to the current position
-            let mut error = self.controller.setpoint - context.data.heading.as_radians();
-            while error > PI {
-                self.controller.setpoint -= 2.0 * PI;
-                error -= 2.0 * PI;
-            }
-            while error < -PI {
-                self.controller.setpoint += 2.0 * PI;
-                error += 2.0 * PI;
-            }
-            self.initialized = true; // Mark as initialized
-        }
-
-        let error = self.controller.setpoint - context.data.heading.as_radians();
+        // Calculate the shortest angular error
+        let error = (self.controller.setpoint - context.data.heading.as_radians() + PI)
+            .rem_euclid(2.0 * PI)
+            - PI;
 
         if self
             .tolerances
@@ -66,14 +53,6 @@ impl super::Action for RotationAction {
             .controller
             .next_control_output(context.data.heading.as_radians())
             .output;
-
-        // log::debug!(
-        //     "Control output: {:.2?} Error: {:.2?} Setpoint: {:.2?} heading: {:.2?}",
-        //     output,
-        //     error,
-        //     self.controller.setpoint,
-        //     context.pose.heading()
-        // );
 
         // Apply the output as a voltage pair for rotation
         Some(crate::subsystems::drivetrain::DrivetrainPair {
