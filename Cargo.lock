@@ -48,9 +48,23 @@ checksum = "5c8214115b7bf84099f1309324e63141d4c5d7cc26862f97a0a857dbefe165bd"
 
 [[package]]
 name = "bytemuck"
-version = "1.22.0"
+version = "1.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6b1fc10dbac614ebc03540c9dbd60e83887fda27794998c6528f1782047d540"
+checksum = "1fbdf580320f38b612e485521afda1ee26d10cc9884efaaa750d383e13e3c5f4"
+dependencies = [
+ "bytemuck_derive",
+]
+
+[[package]]
+name = "bytemuck_derive"
+version = "1.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9abbd1bc6865053c427f7198e6af43bfdedc55ab791faed4fbd361d789575ff"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "byteorder"
@@ -134,6 +148,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f29059c0c2090612e8d742178b0580d2dc940c837851ad723096f87af6663e"
 
 [[package]]
+name = "futures-task"
+version = "0.3.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f90f7dce0722e95104fcb095585910c0977252f286e354b5e3bd38902cd99988"
+
+[[package]]
+name = "futures-util"
+version = "0.3.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fa08315bb612088cc391249efdc3bc77536f16c91f6cf495e6fbe85b20a4a81"
+dependencies = [
+ "futures-core",
+ "futures-task",
+ "pin-project-lite",
+ "pin-utils",
+]
+
+[[package]]
 name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -141,7 +173,7 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "libdoxa"
-version = "0.2.0-alpha.1"
+version = "0.2.0"
 dependencies = [
  "embedded-graphics",
  "log",
@@ -303,6 +335,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b3cff922bd51709b605d9ead9aa71031d81447142d828eb4a6eba76fe619f9b"
 
 [[package]]
+name = "pin-utils"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.94"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -417,15 +455,15 @@ checksum = "00e2473a93778eb0bad35909dff6a10d28e63f792f16ed15e404fca9d5eeedbe"
 
 [[package]]
 name = "vex-sdk"
-version = "0.27.1"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79e5fe15afde1305478b35e2cb717fff59f485428534cf49cfdbfa4723379bf6"
+checksum = "b95fb7c2b31cb4a3e80b86ea47fc2abf21f8065dfd7d603657c44fb56d21b22d"
 
 [[package]]
 name = "vexide"
-version = "0.8.0-alpha.2"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "098f95d027dbaa75a19db9fb36e7b80e2ec4cbf16a3a94f80e5d4ff588f1e6b9"
+checksum = "7c993f1161bf2f4c852c4bd75e2eff95520d6cc03f3a366285ceb227783bd51e"
 dependencies = [
  "vex-sdk",
  "vexide-async",
@@ -435,21 +473,22 @@ dependencies = [
 
 [[package]]
 name = "vexide-async"
-version = "0.2.0-alpha.2"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfaa63e67bf9ddc89ccd9939d54f9eac7a86db53df9a7c38b83ab31f39925df2"
+checksum = "935d1076cb89580f928ad036a1cefe360201e4f1c47120c6e1b35fea5beb6afb"
 dependencies = [
  "async-lock",
  "async-task",
+ "futures-util",
  "vex-sdk",
  "waker-fn",
 ]
 
 [[package]]
 name = "vexide-core"
-version = "0.8.0-alpha.2"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21b33d7ccfbf19c82849fe87d1fa91641950daccc7e4c7181681f5d4fe2c4317"
+checksum = "fd71ec659102e83112e80a652a119629e6a42ed6aa16281c94732f61e4021bd4"
 dependencies = [
  "bitflags",
  "futures-core",
@@ -459,11 +498,12 @@ dependencies = [
 
 [[package]]
 name = "vexide-devices"
-version = "0.8.0-alpha.2"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e64f6c970b3aa0ad1e583f1906b725c3aaf7dc45ab1aef5c8ff363416407cfa"
+checksum = "b2905ccde48b6756ded33f8c160688e7e27c3d804ae038ffa56665cc5f4a8512"
 dependencies = [
  "bitflags",
+ "bytemuck",
  "libm",
  "mint",
  "rgb",
@@ -475,9 +515,9 @@ dependencies = [
 
 [[package]]
 name = "vexide-motorgroup"
-version = "2.2.0-alpha.5"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9654525c1dbc8d6d287eb0946c41949c358dcf75ae451849adc6af045550acb"
+checksum = "0d8941c7f626a6b9d4e4aa3dac9e7149fad3e725647941ad52146ec8923e1a61"
 dependencies = [
  "vexide",
 ]

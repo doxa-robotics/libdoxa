@@ -1,7 +1,6 @@
-use core::f64::consts::PI;
-
 use crate::utils::settling;
 use pid::Pid;
+use vexide::math::Angle;
 
 use super::config::ActionConfig;
 
@@ -38,21 +37,10 @@ impl super::Action for RotationAction {
         &mut self,
         context: super::ActionContext,
     ) -> Option<crate::subsystems::drivetrain::DrivetrainPair> {
-        if !self.initialized {
-            // Normalize the setpoint to the closest direct angle to the current position
-            let mut error = self.controller.setpoint - context.pose.heading();
-            while error > PI {
-                self.controller.setpoint -= 2.0 * PI;
-                error -= 2.0 * PI;
-            }
-            while error < -PI {
-                self.controller.setpoint += 2.0 * PI;
-                error += 2.0 * PI;
-            }
-            self.initialized = true; // Mark as initialized
-        }
-
-        let error = self.controller.setpoint - context.pose.heading();
+        // Calculate the shortest angular error
+        let error = (Angle::from_radians(self.controller.setpoint) - context.data.heading)
+            .wrapped_half()
+            .as_radians();
 
         if self
             .tolerances

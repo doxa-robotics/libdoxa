@@ -83,9 +83,12 @@ impl super::Action for BoomerangAction {
             .next_control_output(context.pose.heading())
             .output;
 
-        if distance > self.settling_distance
-            || self.left_zero.is_none()
-            || self.right_zero.is_none()
+        let error_anglar = (angle_to_target - context.data.heading).wrapped_half();
+        let error_distance = local_target.norm();
+
+        if self
+            .tolerances
+            .check(error_distance, context.data.linear_velocity())
         {
             // If we are more than 50 mm away from the target, we need to set the setpoint
             // to the distance to the target.

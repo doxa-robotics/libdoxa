@@ -58,8 +58,8 @@ pub trait HasWrappingHeading {
 }
 
 impl<T: HasHeading> HasWrappingHeading for T {
-    fn wrapping_heading(&self) -> f64 {
-        self.heading().rem_euclid(2.0 * core::f64::consts::PI)
+    fn wrapping_heading(&self) -> Angle {
+        self.heading().wrapped_full()
     }
 }
 

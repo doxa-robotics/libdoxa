@@ -1,7 +1,7 @@
 [package]
 name = "libdoxa"
 description = "subsystem, tracking, and driving utilities for DOXA Robotics"
-version = "0.2.0-alpha.1"
+version = "0.2.0"
 edition = "2024"
 
 [package.metadata.v5]
@@ -10,8 +10,8 @@ icon = "cool-x"
 compress = true
 
 [dependencies]
-vexide = "0.8.0-alpha.2"
-vexide-motorgroup = "2.2.0-alpha.5"
+vexide = "0.8.0"
+vexide-motorgroup = "2.2.0"
 snafu = { version = "0.8.5", default-features = false, features = [
     "rust_1_81",
 ] }
