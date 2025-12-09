@@ -17,13 +17,11 @@ unsafe impl core::marker::Sync for SimpleLogger {}
 unsafe impl core::marker::Send for SimpleLogger {}
 
 impl SimpleLogger {
-    pub fn new() -> Self {
+    pub fn new(file: &str) -> Self {
         Self {
             // We're being very unsafe here.
             #[allow(clippy::arc_with_non_send_sync)]
-            file: Arc::new(Mutex::new(
-                File::options().append(true).open("log.txt").ok(),
-            )),
+            file: Arc::new(Mutex::new(File::options().append(true).open(file).ok())),
             start_time: std::time::Instant::now(),
         }
     }
@@ -78,8 +76,8 @@ impl log::Log for SimpleLogger {
     }
 }
 
-pub fn init(max_level: log::LevelFilter) -> Result<(), SetLoggerError> {
-    let logger = SimpleLogger::new();
+pub fn init(file: &str, max_level: log::LevelFilter) -> Result<(), SetLoggerError> {
+    let logger = SimpleLogger::new(file);
     let logger_ref = Box::leak(Box::new(logger));
     log::set_logger(logger_ref).map(|()| log::set_max_level(max_level))
 }
