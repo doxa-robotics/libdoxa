@@ -1,4 +1,5 @@
 use vexide::smart::PortError;
+use vexide_motorgroup::MotorGroupError;
 
 /// A global store to hold ports which have had a disconnect error reported.
 /// This is used to avoid spamming the logs with repeated disconnect errors.
@@ -65,6 +66,40 @@ impl<T> UnwrapExpectReportExt<T> for Result<T, PortError> {
                     )
                 }
             },
+            Ok(value) => Some(value),
+        }
+    }
+}
+
+impl<T> UnwrapExpectReportExt<T> for Option<T> {
+    fn unwrap_report(self) -> Option<T> {
+        self.expect_report("called `unwrap_report` on a `None` value")
+    }
+
+    fn expect_report<M: std::fmt::Display>(self, msg: M) -> Option<T> {
+        match self {
+            None => {
+                log::error!("{}: encountered None value (report-only)", msg);
+                None
+            }
+            Some(value) => Some(value),
+        }
+    }
+}
+
+impl<T> UnwrapExpectReportExt<T> for Result<T, MotorGroupError<PortError, T>> {
+    fn unwrap_report(self) -> Option<T> {
+        self.expect_report("called `unwrap_report` on a `MotorGroupError` value")
+    }
+
+    fn expect_report<M: std::fmt::Display>(self, msg: M) -> Option<T> {
+        match self {
+            Err(err) => {
+                for error in err.errors {
+                    Result::<T, PortError>::Err(error).expect_report(&msg);
+                }
+                err.result
+            }
             Ok(value) => Some(value),
         }
     }

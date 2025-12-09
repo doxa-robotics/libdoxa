@@ -3,6 +3,8 @@ use core::cell::RefCell;
 use alloc::rc::Rc;
 use vexide::adi::digital::LogicLevel;
 
+use crate::utils::unwrap_expect_report::UnwrapExpectReportExt;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PneumaticSubsystem<const N: usize, const LOW_IS_EXTENDED: bool = false> {
     solenoids: Rc<RefCell<[vexide::adi::digital::AdiDigitalOut; N]>>,
@@ -24,27 +26,31 @@ impl<const N: usize, const LOW_IS_EXTENDED: bool> PneumaticSubsystem<N, LOW_IS_E
     /// Extends the piston(s).
     pub fn extend(&mut self) {
         for solenoid in self.solenoids.borrow_mut().iter_mut() {
-            _ = solenoid.set_level(match LOW_IS_EXTENDED {
-                true => LogicLevel::Low,
-                false => LogicLevel::High,
-            });
+            solenoid
+                .set_level(match LOW_IS_EXTENDED {
+                    true => LogicLevel::Low,
+                    false => LogicLevel::High,
+                })
+                .expect_report("failed to extend piston");
         }
     }
 
     /// Retracts the piston(s).
     pub fn retract(&mut self) {
         for solenoid in self.solenoids.borrow_mut().iter_mut() {
-            _ = solenoid.set_level(match LOW_IS_EXTENDED {
-                true => LogicLevel::High,
-                false => LogicLevel::Low,
-            });
+            solenoid
+                .set_level(match LOW_IS_EXTENDED {
+                    true => LogicLevel::High,
+                    false => LogicLevel::Low,
+                })
+                .expect_report("failed to retract piston");
         }
     }
 
     /// Toggles the piston(s).
     pub fn toggle(&mut self) {
         for solenoid in self.solenoids.borrow_mut().iter_mut() {
-            _ = solenoid.toggle();
+            solenoid.toggle().expect_report("failed to toggle piston");
         }
     }
 
@@ -100,7 +106,8 @@ impl<const N: usize, const LOW_IS_EXTENDED: bool> MirroredPneumaticSubsystem<N, 
         }
     }
 
-    /// Returns the dominant side of the subsystem (i.e., normally right, mirrored left).
+    /// Returns the dominant side of the subsystem (i.e., normally right,
+    /// mirrored left).
     pub fn dominant(&mut self) -> &mut PneumaticSubsystem<N, LOW_IS_EXTENDED> {
         match self.mirrored_state {
             MirroredState::Normal => &mut self.right,
@@ -108,7 +115,8 @@ impl<const N: usize, const LOW_IS_EXTENDED: bool> MirroredPneumaticSubsystem<N, 
         }
     }
 
-    /// Returns the non-dominant side of the subsystem (i.e., normally left, mirrored right).
+    /// Returns the non-dominant side of the subsystem (i.e., normally left,
+    /// mirrored right).
     pub fn non_dominant(&mut self) -> &mut PneumaticSubsystem<N, LOW_IS_EXTENDED> {
         match self.mirrored_state {
             MirroredState::Normal => &mut self.left,

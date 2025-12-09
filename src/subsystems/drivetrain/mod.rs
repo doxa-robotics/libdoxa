@@ -3,7 +3,9 @@ use core::{cell::RefCell, future::Future, sync::atomic::AtomicBool};
 use alloc::{boxed::Box, rc::Rc};
 use vexide_motorgroup::SharedMotors;
 
-use crate::subsystems::tracking::TrackingData;
+use crate::{
+    subsystems::tracking::TrackingData, utils::unwrap_expect_report::UnwrapExpectReportExt as _,
+};
 
 use super::tracking::TrackingSubsystem;
 
@@ -88,8 +90,11 @@ impl Drivetrain {
                         let max_voltage = max_voltage.borrow();
                         if *max_voltage != last_max_voltage {
                             // Update the max voltage
-                            _ = left.set_voltage_limit(*max_voltage);
-                            _ = right.set_voltage_limit(*max_voltage);
+                            left.set_voltage_limit(*max_voltage)
+                                .expect_report("failed to set left dt max voltage");
+                            right
+                                .set_voltage_limit(*max_voltage)
+                                .expect_report("failed to set right dt max voltage");
                         }
                     }
                     {
@@ -114,12 +119,12 @@ impl Drivetrain {
                                     drivetrain_pair::DrivetrainUnits::Voltage => {
                                         voltage = voltage.max(*max_voltage.borrow());
                                         // Set the voltage
-                                        if let Err(e) = left.set_voltage(voltage.left) {
-                                            log::error!("Failed to set left voltage: {:?}", e);
-                                        }
-                                        if let Err(e) = right.set_voltage(voltage.right) {
-                                            log::error!("Failed to set right voltage: {:?}", e);
-                                        }
+                                        left.set_voltage(voltage.left).expect_report(
+                                            "failed to set left voltage in drivetrain",
+                                        );
+                                        right.set_voltage(voltage.right).expect_report(
+                                            "failed to set right voltage in drivetrain",
+                                        );
                                     }
                                     drivetrain_pair::DrivetrainUnits::RPM => {
                                         // Set the RPM
@@ -143,19 +148,21 @@ impl Drivetrain {
                                         }
                                         last_left_rpm = voltage.left;
                                         last_right_rpm = voltage.right;
-                                        if let Err(e) = left.set_velocity(voltage.left as i32) {
-                                            log::error!("Failed to set left RPM: {:?}", e);
-                                        }
-                                        if let Err(e) = right.set_velocity(voltage.right as i32) {
-                                            log::error!("Failed to set right RPM: {:?}", e);
-                                        }
+                                        left.set_velocity(voltage.left as i32)
+                                            .expect_report("failed to set left RPM in drivetrain");
+                                        right
+                                            .set_velocity(voltage.right as i32)
+                                            .expect_report("failed to set right RPM in drivetrain");
                                     }
                                 }
                                 drop(action_owned);
                             } else {
                                 // Zero out the motors if the action is done
-                                _ = left.set_voltage(0.0);
-                                _ = right.set_voltage(0.0);
+                                left.set_voltage(0.0)
+                                    .expect_report("failed to zero left dt voltage");
+                                right
+                                    .set_voltage(0.0)
+                                    .expect_report("failed to zero right dt voltage");
                                 // Notify the main task that the action is done
                                 action_ref
                                     .1
