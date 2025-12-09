@@ -1,8 +1,8 @@
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+use nalgebra::Point2;
 
 use crate::path_planner::Path;
-use crate::utils::pose::Pose;
 
 #[derive(Debug)]
 /// A struct representing a compound path, which is a collection of paths
@@ -75,7 +75,9 @@ impl Path for CompoundPath {
             }
     }
 
-    fn evaluate(&self, t: f64) -> Pose {
+    // TODO: move shared logic with evaluate_angle to a helper function
+
+    fn evaluate(&self, t: f64) -> Point2<f64> {
         // Find which path t is in
         let path = (self.paths.len() as f64 * t).floor() as isize;
         // If path is less than 0, use the first path. If it's more than the
@@ -91,5 +93,23 @@ impl Path for CompoundPath {
         let local_t = (t - path as f64 * self.path_t) / self.path_t;
         // Evaluate the path at the given t
         self.paths[path].evaluate(local_t)
+    }
+
+    fn evaluate_angle(&self, t: f64) -> f64 {
+        // Find which path t is in
+        let path = (self.paths.len() as f64 * t).floor() as isize;
+        // If path is less than 0, use the first path. If it's more than the
+        // number of paths, use the last path.
+        let path = if path < 0 {
+            0
+        } else if path >= self.paths.len() as isize {
+            self.paths.len() - 1
+        } else {
+            path as usize
+        };
+        // Find t along that path
+        let local_t = (t - path as f64 * self.path_t) / self.path_t;
+        // Evaluate the path at the given t
+        self.paths[path].evaluate_angle(local_t)
     }
 }

@@ -1,8 +1,12 @@
 use core::f64::consts::PI;
 
-use crate::utils::pose::Pose;
+use nalgebra::Point2;
 
-use super::{config::ActionConfig, RotationAction};
+use super::{RotationAction, config::ActionConfig};
+
+fn angle_between_points(from: &Point2<f64>, to: &Point2<f64>) -> f64 {
+    (to.y - from.y).atan2(to.x - from.x)
+}
 
 /// An action that turns the robot to face a point.
 ///
@@ -10,14 +14,14 @@ use super::{config::ActionConfig, RotationAction};
 /// setpoint is not needed, as the target point is used as the setpoint.
 #[derive(Debug)]
 pub struct TurnToPointAction {
-    target: Pose,
+    target: Point2<f64>,
     config: ActionConfig,
     reverse: bool,
     action: Option<RotationAction>,
 }
 
 impl TurnToPointAction {
-    pub fn new(target: Pose, reverse: bool, config: ActionConfig) -> Self {
+    pub fn new(target: Point2<f64>, reverse: bool, config: ActionConfig) -> Self {
         Self {
             target,
             config,
@@ -33,11 +37,11 @@ impl super::Action for TurnToPointAction {
         context: super::ActionContext,
     ) -> Option<crate::subsystems::drivetrain::DrivetrainPair> {
         if self.action.is_none() {
-            let target_heading =
-                context.pose.angle_to(self.target) + if self.reverse { PI } else { 0.0 };
+            let target_heading = angle_between_points(&context.data.offset, &self.target)
+                + if self.reverse { PI } else { 0.0 };
             log::debug!(
                 "{:?} -> {:?} ==> {:?}",
-                context.pose,
+                context.data.offset,
                 self.target,
                 target_heading
             );

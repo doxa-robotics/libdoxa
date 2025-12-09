@@ -6,12 +6,12 @@ use super::config::ActionConfig;
 
 /// An action that rotates the drivetrain to a specific absolute heading.
 ///
-/// This action uses a PID controller to rotate the drivetrain to a target heading.
+/// This action uses a PID controller to rotate the drivetrain to a target
+/// heading.
 #[derive(Debug)]
 pub struct RotationAction {
     controller: Pid<f64>,
     tolerances: settling::Tolerances,
-    initialized: bool, // Flag to track if the setpoint has been normalized
 }
 
 impl RotationAction {
@@ -19,7 +19,6 @@ impl RotationAction {
         Self {
             controller: config.turn_pid(target_radians),
             tolerances: config.turn_tolerances(),
-            initialized: false, // Initialize the flag to false
         }
     }
 
@@ -44,23 +43,15 @@ impl super::Action for RotationAction {
 
         if self
             .tolerances
-            .check(error, context.left_velocity - context.right_velocity)
+            .check(error, context.data.angular_velocity.as_radians())
         {
             return None;
         }
 
         let output = self
             .controller
-            .next_control_output(context.pose.heading())
+            .next_control_output(context.data.heading.as_radians())
             .output;
-
-        // log::debug!(
-        //     "Control output: {:.2?} Error: {:.2?} Setpoint: {:.2?} heading: {:.2?}",
-        //     output,
-        //     error,
-        //     self.controller.setpoint,
-        //     context.pose.heading()
-        // );
 
         // Apply the output as a voltage pair for rotation
         Some(crate::subsystems::drivetrain::DrivetrainPair {

@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use core::{
     fmt,
     iter::Sum,
@@ -9,10 +11,12 @@ use nalgebra::Vector2;
 /// A struct representing a 2D pose with x, y coordinates and a heading
 /// in radians.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[deprecated(note = "Use a separate position vector and heading instead")]
 pub struct Pose {
     pub offset: Vector2<f64>,
     /// Heading in radians
-    /// 0 is facing right, pi/2 is facing up, pi is facing left, and -pi/2 is facing down
+    /// 0 is facing right, pi/2 is facing up, pi is facing left, and -pi/2 is
+    /// facing down
     pub heading: f64,
 }
 

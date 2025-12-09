@@ -1,18 +1,29 @@
 use core::fmt::Debug;
 
-use crate::utils::pose::Pose;
+use nalgebra::Point2;
 
 pub mod compound;
 pub mod cubic_parametric;
 
 pub trait Path: Debug {
     fn length_until(&self, t: f64) -> f64;
-    fn evaluate(&self, t: f64) -> Pose;
+    fn evaluate(&self, t: f64) -> Point2<f64>;
+    fn evaluate_angle(&self, t: f64) -> f64 {
+        let dt = 0.0001;
+        let p1 = self.evaluate(t);
+        let p2 = self.evaluate(t + dt);
+        (p2.y - p1.y).atan2(p2.x - p1.x)
+    }
 
     fn length(&self) -> f64 {
         self.length_until(1.0)
     }
-    fn point_on_radius(&self, pose: Pose, radius: f64, initial_t: Option<f64>) -> Option<f64> {
+    fn point_on_radius(
+        &self,
+        point: Point2<f64>,
+        radius: f64,
+        initial_t: Option<f64>,
+    ) -> Option<f64> {
         let dt = 0.001;
         let mut t = initial_t.unwrap_or(0.0);
         let mut closest_t = t;
@@ -20,7 +31,7 @@ pub trait Path: Debug {
         // let mut last_distance = self.evaluate(t).distance(&pose);
         while t <= 1.0 {
             let current_point = self.evaluate(t);
-            let distance = current_point.distance(pose);
+            let distance = nalgebra::distance(&current_point, &point);
             if (distance - radius).abs() < closest_distance {
                 closest_distance = (distance - radius).abs();
                 closest_t = t;
@@ -38,24 +49,29 @@ pub trait Path: Debug {
             Some(closest_t)
         } else {
             log::error!(
-                "No point on path found within radius {} of pose {:?}. Closest point was {} away",
+                "No point on path found within radius {} of point {:?}. Closest point was {} away",
                 radius,
-                pose,
+                point,
                 closest_distance
             );
             None
         }
     }
-    fn closest_point(&self, pose: Pose, initial_t: Option<f64>, overshoot: Option<f64>) -> f64 {
+    fn closest_point(
+        &self,
+        point: Point2<f64>,
+        initial_t: Option<f64>,
+        overshoot: Option<f64>,
+    ) -> f64 {
         let dt = 0.01;
         let mut t = initial_t.unwrap_or(0.0);
         let mut closest_t = t;
         let mut closest_distance = f64::MAX;
-        let mut last_distance = self.evaluate(t).distance(pose);
+        let mut last_distance = nalgebra::distance(&self.evaluate(t), &point);
         let overshoot = overshoot.unwrap_or(0.0);
         while t <= 1.0 + overshoot {
             let current_point = self.evaluate(t);
-            let distance = current_point.distance(pose);
+            let distance = nalgebra::distance(&current_point, &point);
             if distance < closest_distance {
                 closest_distance = distance;
                 closest_t = t;
@@ -70,7 +86,7 @@ pub trait Path: Debug {
         t = initial_t.unwrap_or(0.0);
         while t >= 0.0 - overshoot {
             let current_point = self.evaluate(t);
-            let distance = current_point.distance(pose);
+            let distance = nalgebra::distance(&current_point, &point);
             if distance < closest_distance {
                 closest_distance = distance;
                 closest_t = t;

@@ -1,33 +1,42 @@
-use core::{
-    cell::RefCell,
-    f64::{self, consts::PI},
-};
+use core::{cell::RefCell, f64};
 
 use alloc::{rc::Rc, vec::Vec};
-use nalgebra::{Rotation2, Vector2};
-use vexide::prelude::{RotationSensor, SmartDevice};
-
-use crate::utils::{
-    pose::Pose,
-    traits::{HasHeading, HasRotation},
+use nalgebra::{Point2, Rotation2, Vector2};
+use vexide::{
+    math::Angle,
+    prelude::{RotationSensor, SmartDevice},
 };
 
-pub mod wheel;
+use crate::utils::traits::{HasHeading, HasRotation};
 
-#[derive(Debug)]
+mod tracking_data;
+pub mod wheel;
+pub use tracking_data::TrackingData;
+
+#[derive(Debug, Clone)]
 pub struct TrackingSubsystem {
-    pose: Rc<RefCell<Pose>>,
-    initial_pose: Rc<RefCell<Pose>>,
+    current: Rc<RefCell<TrackingData>>,
     reverse: Rc<RefCell<bool>>,
-    _task: vexide::task::Task<()>,
+    gyro_calibrating: Rc<RefCell<bool>>,
+    heading_offset: Rc<RefCell<Angle>>,
+    _task: Rc<vexide::task::Task<()>>,
 }
 
 impl TrackingSubsystem {
+    /// Creates a new TrackingSubsystem with the given tracking wheels and
+    /// heading sensor.
+    ///
+    /// If there are no tracking wheels in a given direction, the subsystem will
+    /// not track movement in that direction. Drivetrain motors should be
+    /// passed as a parallel tracking wheel if that is desired.
+    ///
+    /// The initial pose is at (0, 0) with a heading of 0 radians. It should be
+    /// set to the correct initial pose before starting autonomous via
+    /// [`set_pose`](Self::set_pose).
     pub fn new<PT: HasRotation + 'static, LT: HasRotation + 'static, HT: HasHeading + 'static>(
         perpendicular_tracking_wheels: impl IntoIterator<Item = wheel::TrackingWheel<PT>>,
         parallel_tracking_wheels: impl IntoIterator<Item = wheel::TrackingWheel<LT>>,
         heading_sensor: HT,
-        initial: Pose,
     ) -> Self {
         // Convert the tracking wheels into a solid vector
         let mut perpendicular_tracking_wheels = perpendicular_tracking_wheels
@@ -36,22 +45,35 @@ impl TrackingSubsystem {
         let mut parallel_tracking_wheels = parallel_tracking_wheels
             .into_iter()
             .collect::<Vec<wheel::TrackingWheel<LT>>>();
-        let current_pose = Rc::new(RefCell::new(initial));
-        let initial_pose = Rc::new(RefCell::new(initial));
+        let current = Rc::new(RefCell::new(TrackingData::default()));
+        let gyro_calibrating = Rc::new(RefCell::new(false));
+        let heading_offset = Rc::new(RefCell::new(Angle::default()));
         Self {
-            pose: current_pose.clone(),
-            initial_pose: initial_pose.clone(),
+            current: current.clone(),
             reverse: Rc::new(RefCell::new(false)),
-            _task: vexide::task::spawn(async move {
-                // Get the current heading to initialize last_heading. Note that
-                // the initial heading is taken into account.
-                let mut last_heading = initial_pose.borrow().heading() - heading_sensor.heading();
+            gyro_calibrating: gyro_calibrating.clone(),
+            heading_offset: heading_offset.clone(),
+            _task: Rc::new(vexide::task::spawn(async move {
+                // The raw heading is the heading from the heading sensor,
+                // before any transformations.
+                let mut last_raw_heading = heading_sensor.heading();
                 loop {
-                    // Get the current heading and calculate the delta while
-                    // taking the initial heading into account.
-                    let heading = initial_pose.borrow().heading() - heading_sensor.heading();
-                    let heading_delta = heading - last_heading;
-                    last_heading = heading;
+                    let raw_heading = heading_sensor.heading();
+                    // opposite because of CCW vs CW
+                    let heading_delta = last_raw_heading - raw_heading;
+                    last_raw_heading = raw_heading;
+
+                    let last_heading = {
+                        let current = current.borrow();
+                        current.heading
+                        // current is implicitly dropped here
+                    };
+                    // TODO: avoid adding the delta to avoid precision issues
+                    // We subtract the heading delta to get the new heading
+                    // because we use mathematical positive rotation (CCW) but
+                    // the heading sensor uses CW as positive rotation.
+                    let heading = -(raw_heading/* + *heading_offset.borrow() */);
+
                     // Average the heading and displacement of the tracking wheels
                     let average_heading = (heading + last_heading) / 2.0;
                     let average_displacement: Vector2<_> =
@@ -71,10 +93,14 @@ impl TrackingSubsystem {
                     // Update the current pose with the new tracking data.
                     // This is in the original coordinate system.
                     {
-                        let mut current_pose = current_pose.borrow_mut();
-                        let rotation_matrix = Rotation2::new(average_heading - PI / 2.0);
-                        current_pose.offset += rotation_matrix * average_displacement;
-                        current_pose.heading = average_heading;
+                        let mut current = current.borrow_mut();
+                        let rotation_matrix =
+                            Rotation2::new((average_heading - Angle::HALF_TURN).as_radians());
+                        *current = current.advance(
+                            current.offset + rotation_matrix * average_displacement,
+                            average_heading,
+                            raw_heading,
+                        );
                     }
                     // TODO: add a way to pass a debug renderer directly to the
                     // tracking subsystem
@@ -85,16 +111,19 @@ impl TrackingSubsystem {
                         let mut display = unsafe { vexide::display::Display::new() };
                         let shape = vexide::display::Circle::new(
                             vexide::math::Point2 {
-                                x: (current_pose.borrow().offset.x * 0.066666667 + 120.0) as i16,
-                                y: (120.0 - current_pose.borrow().offset.y * 0.066666667) as i16,
+                                x: (current.borrow().offset.x * 0.066666667 + 120.0) as i16,
+                                y: (120.0 - current.borrow().offset.y * 0.066666667) as i16,
                             },
                             1,
                         );
                         display.fill(&shape, (255, 0, 0));
                     }
+
+                    gyro_calibrating.replace(heading_sensor.is_calibrating());
+
                     vexide::time::sleep(RotationSensor::UPDATE_INTERVAL).await;
                 }
-            }),
+            })),
         }
     }
 
@@ -104,29 +133,49 @@ impl TrackingSubsystem {
     /// used by the `reverse` function. This means that autonomous routes should
     /// be written in the original coordinate system, and then the `reverse`
     /// function can be used to add genericity, if that's a word.
-    pub fn pose(&self) -> Pose {
-        let pose = *self.pose.borrow();
+    pub fn current(&self) -> TrackingData {
+        let data = *self.current.borrow();
         if *self.reverse.borrow() {
-            Pose::new(pose.offset.x, -pose.offset.y, PI * 2.0 - pose.heading)
+            TrackingData {
+                offset: Point2::new(data.offset.x, -data.offset.y),
+                heading: Angle::FULL_TURN - data.heading,
+                ..data
+            }
         } else {
-            pose
+            data
         }
     }
 
     /// Reset the initial pose of the robot
     ///
-    /// Note that this in the transformed coordinate system used by the `reverse`
-    /// function.
-    pub fn set_pose(&mut self, pose: Pose) {
-        let new_pose = {
-            if *self.reverse.borrow() {
-                Pose::new(pose.offset.x, -pose.offset.y, PI * 2.0 - pose.heading)
-            } else {
-                pose
-            }
+    /// Note that this in the transformed coordinate system used by the
+    /// `reverse` function.
+    pub fn set_current(&mut self, offset: Point2<f64>, heading: Angle) {
+        let current_raw_heading = {
+            let current = self.current.borrow();
+            current.raw_heading.unwrap_or_default()
+            // current is implicitly dropped here
         };
-        *self.initial_pose.borrow_mut() = new_pose;
-        *self.pose.borrow_mut() = new_pose;
+        // Adjust the heading offset to make the new heading correct
+        *self.heading_offset.borrow_mut() = (-heading) - current_raw_heading;
+        let data = TrackingData {
+            offset,
+            heading,
+            velocity: Vector2::default(),
+            angular_velocity: Angle::default(),
+            timestamp: Some(std::time::Instant::now()),
+            dt: std::time::Duration::default(),
+            raw_heading: Some(current_raw_heading),
+        };
+        *self.current.borrow_mut() = if *self.reverse.borrow() {
+            TrackingData {
+                offset: Point2::new(data.offset.x, -data.offset.y),
+                heading: Angle::FULL_TURN - data.heading,
+                ..data
+            }
+        } else {
+            data
+        };
     }
 
     /// The reverse state of the tracking subsystem
@@ -149,5 +198,10 @@ impl TrackingSubsystem {
     /// driver control.
     pub fn set_reverse(&mut self, reverse: bool) {
         *self.reverse.borrow_mut() = reverse;
+    }
+
+    /// Returns whether the gyro is currently calibrating.
+    pub fn is_gyro_calibrating(&self) -> bool {
+        *self.gyro_calibrating.borrow()
     }
 }
