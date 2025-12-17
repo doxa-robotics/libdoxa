@@ -33,6 +33,15 @@ impl DrivetrainPair {
         }
     }
 
+    /// Constructs a new DrivetrainPair using Voltage units
+    pub fn new_voltage(left: f64, right: f64) -> Self {
+        DrivetrainPair {
+            left,
+            right,
+            units: DrivetrainUnits::Voltage,
+        }
+    }
+
     /// Scales the voltage pair preserving the ratio while staying under the max
     /// voltage
     #[must_use = "does not mutate original value"]

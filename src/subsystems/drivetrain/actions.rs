@@ -4,7 +4,7 @@ use crate::subsystems::tracking::TrackingData;
 
 mod boomerang;
 pub mod config;
-// mod drive_to_point;
+mod drive_to_point;
 mod forward;
 mod lazy;
 // mod pure_pursuit;
@@ -29,7 +29,7 @@ pub struct ActionContext {
 }
 
 pub use boomerang::BoomerangAction;
-// pub use drive_to_point::DriveToPointAction;
+pub use drive_to_point::DriveToPointAction;
 pub use forward::ForwardAction;
 pub use lazy::LazyAction;
 // pub use pure_pursuit::PurePursuitAction;

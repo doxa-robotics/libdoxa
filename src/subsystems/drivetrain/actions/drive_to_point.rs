@@ -15,8 +15,8 @@ pub struct DriveToPointAction {
     target: Point2<f64>,
     reverse: bool,
     state: DriveToPointState,
-    turn_config: super::config::ActionConfig,
     config: super::config::ActionConfig,
+    turn_config: super::config::ActionConfig,
 }
 
 #[derive(Debug)]
@@ -53,7 +53,7 @@ impl Action for DriveToPointAction {
                 self.state = DriveToPointState::Turning(TurnToPointAction::new(
                     self.target,
                     self.reverse,
-                    self.config,
+                    self.turn_config,
                 ));
                 self.update(context)
             }
@@ -62,8 +62,15 @@ impl Action for DriveToPointAction {
                     return Some(voltage);
                 }
                 // Transition to driving action
-                self.state =
-                    DriveToPointState::Driving(BoomerangAction::new(self.target, self.config));
+                self.state = DriveToPointState::Driving(BoomerangAction::new(
+                    self.target,
+                    context.data.heading,
+                    // + if self.reverse { Angle::HALF_TURN
+                    // } else {
+                    //     Angle::ZERO
+                    // },
+                    self.config,
+                ));
                 self.update(context)
             }
             DriveToPointState::Driving(forward_action) => {

@@ -54,10 +54,8 @@ impl super::Action for RotationAction {
             .output;
 
         // Apply the output as a voltage pair for rotation
-        Some(crate::subsystems::drivetrain::DrivetrainPair {
-            left: -output,
-            right: output,
-            units: crate::subsystems::drivetrain::drivetrain_pair::DrivetrainUnits::RPM,
-        })
+        Some(crate::subsystems::drivetrain::DrivetrainPair::new_voltage(
+            -output, output,
+        ))
     }
 }

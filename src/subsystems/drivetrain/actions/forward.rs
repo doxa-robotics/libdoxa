@@ -58,6 +58,6 @@ impl super::Action for ForwardAction {
 
         let output = self.controller.next_control_output(distance).output;
 
-        Some(DrivetrainPair::new_rpm(output, output))
+        Some(DrivetrainPair::from(output))
     }
 }
