@@ -13,16 +13,16 @@ use super::config::ActionConfig;
 pub struct ForwardAction {
     controller: Pid<f64>,
     tolerances: settling::Tolerances,
-
+    setpoint: f64,
     initial_point: Option<Point2<f64>>,
 }
 
 impl ForwardAction {
     pub fn new(distance: f64, config: ActionConfig) -> Self {
-        let controller = config.linear_pid(distance);
         Self {
-            controller,
+            controller: config.linear_pid(0.0),
             tolerances: config.linear_tolerances(),
+            setpoint: distance,
             initial_point: None,
         }
     }
@@ -51,12 +51,12 @@ impl super::Action for ForwardAction {
             // If we are going backwards, invert the distance
             distance *= -1.0;
         }
-        let error = self.controller.setpoint - distance;
+        let error = self.setpoint - distance;
         if self.tolerances.check(error, context.data.linear_velocity()) {
             return None;
         }
 
-        let output = self.controller.next_control_output(distance).output;
+        let output = self.controller.next_control_output(-error).output;
 
         Some(DrivetrainPair::from(output))
     }

@@ -11,13 +11,15 @@ use super::config::ActionConfig;
 #[derive(Debug)]
 pub struct RotationAction {
     controller: Pid<f64>,
+    setpoint: f64,
     tolerances: settling::Tolerances,
 }
 
 impl RotationAction {
     pub fn new(target_radians: f64, config: ActionConfig) -> Self {
         Self {
-            controller: config.turn_pid(target_radians),
+            controller: config.turn_pid(0.0),
+            setpoint: target_radians,
             tolerances: config.turn_tolerances(),
         }
     }
@@ -37,7 +39,7 @@ impl super::Action for RotationAction {
         context: super::ActionContext,
     ) -> Option<crate::subsystems::drivetrain::DrivetrainPair> {
         // Calculate the shortest angular error
-        let error = (Angle::from_radians(self.controller.setpoint) - context.data.heading)
+        let error = (Angle::from_radians(self.setpoint) - context.data.heading)
             .wrapped_half()
             .as_radians();
 
@@ -48,10 +50,7 @@ impl super::Action for RotationAction {
             return None;
         }
 
-        let output = self
-            .controller
-            .next_control_output(context.data.heading.as_radians())
-            .output;
+        let output = self.controller.next_control_output(-error).output;
 
         // Apply the output as a voltage pair for rotation
         Some(crate::subsystems::drivetrain::DrivetrainPair::new_voltage(
