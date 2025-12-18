@@ -29,10 +29,10 @@ enum DriveToPointState {
 }
 
 impl DriveToPointAction {
-    pub fn new(target: Point2<f64>, reverse: bool, config: ActionConfig) -> Self {
+    pub fn new(target: Point2<f64>, config: ActionConfig) -> Self {
         Self {
             target,
-            reverse,
+            reverse: false,
             state: DriveToPointState::NotStarted,
             config,
             turn_config: config,
@@ -41,6 +41,11 @@ impl DriveToPointAction {
 
     pub fn with_turn_config(mut self, turn_config: ActionConfig) -> Self {
         self.turn_config = turn_config;
+        self
+    }
+
+    pub fn with_reverse(mut self, reverse: bool) -> Self {
+        self.reverse = reverse;
         self
     }
 }
