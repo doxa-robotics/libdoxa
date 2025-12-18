@@ -50,7 +50,7 @@ impl super::Action for RotationAction {
             return None;
         }
 
-        let output = self.controller.next_control_output(-error).output;
+        let output = self.controller.next_control_output(error).output;
 
         // Apply the output as a voltage pair for rotation
         Some(crate::subsystems::drivetrain::DrivetrainPair::new_voltage(
