@@ -243,4 +243,10 @@ impl TrackingSubsystem {
     pub fn is_gyro_calibrating(&self) -> bool {
         *self.gyro_calibrating.borrow()
     }
+
+    /// Returns a Rc<RefCell<bool>> that indicates whether the gyro is
+    /// currently calibrating.
+    pub fn gyro_calibrating(&self) -> Rc<RefCell<bool>> {
+        self.gyro_calibrating.clone()
+    }
 }
