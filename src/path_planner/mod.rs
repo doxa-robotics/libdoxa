@@ -6,8 +6,17 @@ pub mod compound;
 pub mod cubic_parametric;
 
 pub trait Path: Debug {
+    /// Returns the length of the path from t=0 to t=`t`. This is calculated as
+    /// the integral of the path's derivative (arc length) from 0 to `t`.
     fn length_until(&self, t: f64) -> f64;
+
+    /// Evaluates the path at a given t value in [0, 1] to produce a 2D point.
     fn evaluate(&self, t: f64) -> Point2<f64>;
+
+    /// Evaluates the angle of the path at a given t value in [0, 1].
+    ///
+    /// This corresponds to the tangent of the path at that point. The default
+    /// implementation approximates this using the implementation of `evaluate`.
     fn evaluate_angle(&self, t: f64) -> f64 {
         let dt = 0.0001;
         let p1 = self.evaluate(t);
@@ -15,9 +24,16 @@ pub trait Path: Debug {
         (p2.y - p1.y).atan2(p2.x - p1.x)
     }
 
+    /// Returns the total length of the path.
+    ///
+    /// Typically, unless there is a more efficient implementation, the default
+    /// implementation of `length_until(1.0)` can be used.
     fn length(&self) -> f64 {
         self.length_until(1.0)
     }
+
+    /// Finds a point on the path that is approximately `radius` distance from
+    /// the given `point`.
     fn point_on_radius(
         &self,
         point: Point2<f64>,
@@ -49,7 +65,7 @@ pub trait Path: Debug {
             Some(closest_t)
         } else {
             log::error!(
-                "No point on path found within radius {} of point {:?}. Closest point was {} away",
+                "Path: No point on path found within radius {} of point {:?}. Closest point was {} away",
                 radius,
                 point,
                 closest_distance
@@ -57,6 +73,12 @@ pub trait Path: Debug {
             None
         }
     }
+
+    /// Finds the closest point on the path to the given `point`.
+    ///
+    /// An optional `initial_t` can be provided to start the search from a
+    /// specific point on the path. An optional `overshoot` can be provided to
+    /// allow searching slightly beyond the [0, 1] range.
     fn closest_point(
         &self,
         point: Point2<f64>,
