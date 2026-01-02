@@ -1,7 +1,7 @@
 {
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
-    cargo-v5.url = "github:vexide/cargo-v5?ref=upstreamed-target";
+    cargo-v5.url = "github:vexide/cargo-v5?ref=v0.12.1";
     rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
