@@ -117,6 +117,6 @@ impl HasWrappingHeading for AdiGyroscope {
 
 impl<T: HasHeading> HasHeading for Rc<RefCell<T>> {
     fn heading(&self) -> Angle {
-        self.borrow().heading()
+        self.try_borrow().map_or(Angle::default(), |f| f.heading())
     }
 }
