@@ -1,5 +1,4 @@
 use nalgebra::Point2;
-use vexide::math::Angle;
 
 use super::BoomerangAction;
 use super::config::ActionConfig;
@@ -68,16 +67,13 @@ impl Action for DriveToPointAction {
                     return Some(voltage);
                 }
                 // Transition to driving action
-                self.state = DriveToPointState::Driving(BoomerangAction::new(
-                    self.target,
-                    context.data.heading
-                        + if self.reverse {
-                            Angle::HALF_TURN
-                        } else {
-                            Angle::ZERO
-                        },
-                    self.config,
-                ));
+                let boomerang =
+                    BoomerangAction::new(self.target, context.data.heading, self.config);
+                self.state = DriveToPointState::Driving(if self.reverse {
+                    boomerang.reversed()
+                } else {
+                    boomerang
+                });
                 self.update(context)
             }
             DriveToPointState::Driving(forward_action) => {
