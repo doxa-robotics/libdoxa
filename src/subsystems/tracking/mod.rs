@@ -102,61 +102,61 @@ impl TrackingSubsystem {
                             raw_heading,
                         );
                     }
-                    // TODO: add a way to pass a debug renderer directly to the
-                    // tracking subsystem
-                    // This is a temporary solution to allow for debugging
-                    #[cfg(feature = "unsafe_debug_render")]
-                    {
-                        // SAFETY: This is not safe.
-                        let mut display = unsafe { vexide::display::Display::new() };
-                        let current = { *current.borrow() };
-                        let shape = vexide::display::Circle::new(
-                            vexide::math::Point2 {
-                                x: (current.offset.x * 0.066666667 + 120.0) as i16,
-                                y: (120.0 - current.offset.y * 0.066666667) as i16,
-                            },
-                            1,
-                        );
-                        display.fill(&shape, (255, 0, 0));
-                        display.fill(
-                            &vexide::display::Rect::from_dimensions(
-                                vexide::math::Point2 { x: 300, y: 50 },
-                                150,
-                                100,
-                            ),
-                            vexide::color::Color::WHITE,
-                        );
-                        display.draw_text(
-                            &vexide::display::Text::from_string(
-                                format!("{:.2?}", current.offset / 600.0),
-                                vexide::display::Font::new(
-                                    vexide::display::FontSize::MEDIUM,
-                                    vexide::display::FontFamily::Monospace,
-                                ),
-                                vexide::math::Point2 { x: 305, y: 55 },
-                            ),
-                            vexide::color::Color::BLACK,
-                            None,
-                        );
-                        display.draw_text(
-                            &vexide::display::Text::from_string(
-                                format!(
-                                    "{:.2} r = {:.1}°",
-                                    current.heading.as_radians(),
-                                    current.heading.as_degrees()
-                                ),
-                                vexide::display::Font::new(
-                                    vexide::display::FontSize::MEDIUM,
-                                    vexide::display::FontFamily::Monospace,
-                                ),
-                                vexide::math::Point2 { x: 305, y: 75 },
-                            ),
-                            vexide::color::Color::new(80, 80, 80),
-                            None,
-                        );
-                        display.set_render_mode(vexide::display::RenderMode::DoubleBuffered);
-                        display.render();
-                    }
+                    // // TODO: add a way to pass a debug renderer directly to the
+                    // // tracking subsystem
+                    // // This is a temporary solution to allow for debugging
+                    // #[cfg(feature = "unsafe_debug_render")]
+                    // {
+                    //     // SAFETY: This is not safe.
+                    //     let mut display = unsafe { vexide::display::Display::new() };
+                    //     let current = { *current.borrow() };
+                    //     let shape = vexide::display::Circle::new(
+                    //         vexide::math::Point2 {
+                    //             x: (current.offset.x * 0.066666667 + 120.0) as i16,
+                    //             y: (120.0 - current.offset.y * 0.066666667) as i16,
+                    //         },
+                    //         1,
+                    //     );
+                    //     display.fill(&shape, (255, 0, 0));
+                    //     display.fill(
+                    //         &vexide::display::Rect::from_dimensions(
+                    //             vexide::math::Point2 { x: 300, y: 50 },
+                    //             150,
+                    //             100,
+                    //         ),
+                    //         vexide::color::Color::WHITE,
+                    //     );
+                    //     display.draw_text(
+                    //         &vexide::display::Text::from_string(
+                    //             format!("{:.2?}", current.offset / 600.0),
+                    //             vexide::display::Font::new(
+                    //                 vexide::display::FontSize::MEDIUM,
+                    //                 vexide::display::FontFamily::Monospace,
+                    //             ),
+                    //             vexide::math::Point2 { x: 305, y: 55 },
+                    //         ),
+                    //         vexide::color::Color::BLACK,
+                    //         None,
+                    //     );
+                    //     display.draw_text(
+                    //         &vexide::display::Text::from_string(
+                    //             format!(
+                    //                 "{:.2} r = {:.1}°",
+                    //                 current.heading.as_radians(),
+                    //                 current.heading.as_degrees()
+                    //             ),
+                    //             vexide::display::Font::new(
+                    //                 vexide::display::FontSize::MEDIUM,
+                    //                 vexide::display::FontFamily::Monospace,
+                    //             ),
+                    //             vexide::math::Point2 { x: 305, y: 75 },
+                    //         ),
+                    //         vexide::color::Color::new(80, 80, 80),
+                    //         None,
+                    //     );
+                    //     display.set_render_mode(vexide::display::RenderMode::DoubleBuffered);
+                    //     display.render();
+                    // }
 
                     gyro_calibrating.replace(heading_sensor.is_calibrating());
 
