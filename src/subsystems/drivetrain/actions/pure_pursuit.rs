@@ -1,5 +1,3 @@
-use core::f64::consts::PI;
-
 use nalgebra::Point2;
 use pid::Pid;
 use vexide::math::Angle;
@@ -8,7 +6,7 @@ use crate::{
     path_planner::Path, subsystems::drivetrain::DrivetrainPair, utils::settling::Tolerances,
 };
 
-use super::{BoomerangAction, boomerang::turning_linear_scalar_curve, config::ActionConfig};
+use super::{BoomerangAction, config::ActionConfig};
 
 #[derive(Debug)]
 pub struct PurePursuitAction<T: Path> {
@@ -19,7 +17,6 @@ pub struct PurePursuitAction<T: Path> {
     linear_pid: Pid<f64>,
     linear_tolerances: Tolerances,
     last_t: f64,
-    last_path_distance: f64,
     target_point: Point2<f64>,
     lookahead: f64,
     settled: bool,
@@ -36,10 +33,9 @@ impl<T: Path> PurePursuitAction<T> {
             path_total,
             disable_seeking_distance: disable_seeking_distance.unwrap_or(0.0),
             target_point: path.evaluate(0.0),
-            linear_pid: config.linear_pid(path.length()),
+            linear_pid: config.linear_pid(0.0),
             path,
             last_t: 0.0,
-            last_path_distance: 0.0,
             settled: false,
             final_seeking: None,
             lookahead: config.pursuit_lookahead,
@@ -57,6 +53,7 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             return None;
         }
         if let Some(mut action) = self.final_seeking {
+            // If we are in final seeking mode, just run that action
             action.update(context)
         } else {
             // Find the closest point on the path to the current pose
@@ -66,27 +63,26 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             // Find how far along the path we are
             let path_distance = self.path.length_until(current_t);
             // Calculate the distance and velocity to the end of the path
-            let error = self.path_total - path_distance;
-            let velocity = context.data.linear_velocity();
+            let linear_error = self.path_total - path_distance;
+            let linear_velocity = context.data.linear_velocity();
             // Are we there yet?
-            if self.linear_tolerances.check(error, velocity) {
+            if self.linear_tolerances.check(linear_error, linear_velocity) {
                 self.settled = true;
                 return None;
             }
-            self.last_path_distance = path_distance;
             self.last_t = current_t;
-
-            // Calculate the linear part of the differential drive
-            // We simply use a PID controller while plugging in the error along the path
-            let mut linear_voltage = self.linear_pid.next_control_output(path_distance).output;
 
             // If we're within the disable seeking distance, let's just start seeking
             // the end of the path
             if nalgebra::distance(&self.target_point, &context.data.offset)
                 < self.disable_seeking_distance
             {
-                self.final_seeking = Some(BoomerangAction::new(self.end_point, self.config));
-                return None;
+                self.final_seeking = Some(BoomerangAction::new(
+                    self.end_point,
+                    Angle::from_radians(self.path.evaluate_angle(1.0)),
+                    self.config,
+                ));
+                return self.final_seeking.as_mut().unwrap().update(context);
             }
 
             // Calculate the rotational part of the differential drive
@@ -121,45 +117,35 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                     );
                     display.fill(&shape, (0, 255, 0));
                 }
-            } else if nalgebra::distance(&self.target_point, &context.data.offset) <= self.lookahead
-            {
-                // If we can't find a target point but we're within the lookahead
-                // distance, we can just use the end of the path
-                self.final_seeking = Some(BoomerangAction::new(self.end_point, self.config));
             } else {
                 // We can't find a target point and we've strayed too far from the path
-                self.final_seeking = Some(BoomerangAction::new(self.end_point, self.config));
-            }
-            // Calculate the angle to the target point
-            let mut angle_to_target = (self.target_point.y - context.data.offset.y)
-                .atan2(self.target_point.x - context.data.offset.x);
-            // Adjust angle_to_target to be closest to the context.pose.heading()
-            while angle_to_target - context.data.heading.as_radians() > PI {
-                angle_to_target -= 2.0 * PI;
-            }
-            while angle_to_target - context.data.heading.as_radians() < -PI {
-                angle_to_target += 2.0 * PI;
+                log::error!(
+                    "Pure pursuit: unable to find target point on path! {:?}",
+                    context.data.offset
+                );
+                // Fallback to seeking the previous target point
             }
 
-            if angle_to_target - context.data.heading.as_radians() > PI / 2.0 {
-                angle_to_target -= PI;
-                linear_voltage = -linear_voltage;
-            } else if angle_to_target - context.data.heading.as_radians() < -PI / 2.0 {
-                angle_to_target += PI;
-                linear_voltage = -linear_voltage;
-            }
+            // Calculate the closest angular error to the target point
+            let angular_error = (Angle::from_radians(
+                (self.target_point.y - context.data.offset.y)
+                    .atan2(self.target_point.x - context.data.offset.x),
+            ) - context.data.heading)
+                .wrapped_half();
 
-            self.rotational_pid.setpoint(angle_to_target);
+            // Calculate the rotational voltage
             let rotational_voltage = self
                 .rotational_pid
-                .next_control_output(context.data.heading.as_radians())
+                // in principle this should be negative but
+                // TODO: verify that the sign is correct
+                .next_control_output(-angular_error.as_radians())
                 .output;
 
-            // First, scale the linear voltage.
-            let linear_scalar = turning_linear_scalar_curve(Angle::from_radians(
-                context.data.heading.as_radians() - angle_to_target,
-            ));
-            linear_voltage *= linear_scalar;
+            // Calculate the linear part of the differential drive
+            let linear_voltage = self.linear_pid.next_control_output(-linear_error).output
+                // scalar to reduce speed on turns. more info in boomerang action
+                * angular_error.cos().max(0.0);
+
             Some(DrivetrainPair {
                 left: linear_voltage - rotational_voltage,
                 right: linear_voltage + rotational_voltage,
