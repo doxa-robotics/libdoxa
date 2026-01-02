@@ -10,18 +10,26 @@ use super::{BoomerangAction, config::ActionConfig};
 
 #[derive(Debug)]
 pub struct PurePursuitAction<T: Path> {
-    path: T,
-    disable_seeking_distance: f64,
+    // Cached values
     path_total: f64,
-    rotational_pid: Pid<f64>,
-    linear_pid: Pid<f64>,
-    linear_tolerances: Tolerances,
-    last_t: f64,
     target_point: Point2<f64>,
     lookahead: f64,
-    settled: bool,
     end_point: Point2<f64>,
+
+    // State
+    settled: bool,
+    last_t: f64,
     final_seeking: Option<BoomerangAction>,
+
+    // PIDs
+    rotational_pid: Pid<f64>,
+    linear_pid: Pid<f64>,
+
+    // Configuration
+    path: T,
+    disable_seeking_distance: f64,
+    linear_tolerances: Tolerances,
+    reverse: bool,
     config: ActionConfig,
 }
 
@@ -42,7 +50,18 @@ impl<T: Path> PurePursuitAction<T> {
             rotational_pid: config.pursuit_turn_pid(0.0),
             linear_tolerances: config.linear_tolerances(),
             config,
+            reverse: false,
         }
+    }
+
+    /// Sets this action to be reversed.
+    ///
+    /// When reversed, the robot will drive backwards along the path,
+    /// attempting to face the *back* of the robot towards the direction of
+    /// travel.
+    pub fn reversed(mut self) -> Self {
+        self.reverse = true;
+        self
     }
 }
 
@@ -130,8 +149,14 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             let angular_error = (Angle::from_radians(
                 (self.target_point.y - context.data.offset.y)
                     .atan2(self.target_point.x - context.data.offset.x),
-            ) - context.data.heading)
-                .wrapped_half();
+            ) - (context.data.heading
+                + if self.reverse {
+                    // Reverse the heading by 180 degrees if we're reversed
+                    Angle::HALF_TURN
+                } else {
+                    Angle::ZERO
+                }))
+            .wrapped_half();
 
             // Calculate the rotational voltage
             let rotational_voltage = self
