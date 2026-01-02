@@ -109,7 +109,7 @@ impl TrackingSubsystem {
                     {
                         // SAFETY: This is not safe.
                         let mut display = unsafe { vexide::display::Display::new() };
-                        let current = { current.borrow().clone() };
+                        let current = { *current.borrow() };
                         let shape = vexide::display::Circle::new(
                             vexide::math::Point2 {
                                 x: (current.offset.x * 0.066666667 + 120.0) as i16,
