@@ -40,7 +40,7 @@ impl super::Action for TurnToPointAction {
             let target_heading = angle_between_points(&context.data.offset, &self.target)
                 + if self.reverse { PI } else { 0.0 };
             log::debug!(
-                "{:?} -> {:?} ==> {:?}",
+                "Turn to point: {:.2} -> {:.2} ({:.2} rad)",
                 context.data.offset,
                 self.target,
                 target_heading

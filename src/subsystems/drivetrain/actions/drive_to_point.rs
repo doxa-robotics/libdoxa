@@ -1,4 +1,5 @@
 use nalgebra::Point2;
+use vexide::math::Angle;
 
 use super::BoomerangAction;
 use super::config::ActionConfig;
@@ -44,8 +45,8 @@ impl DriveToPointAction {
         self
     }
 
-    pub fn with_reverse(mut self, reverse: bool) -> Self {
-        self.reverse = reverse;
+    pub fn reversed(mut self) -> Self {
+        self.reverse = true;
         self
     }
 }
@@ -69,11 +70,12 @@ impl Action for DriveToPointAction {
                 // Transition to driving action
                 self.state = DriveToPointState::Driving(BoomerangAction::new(
                     self.target,
-                    context.data.heading,
-                    // + if self.reverse { Angle::HALF_TURN
-                    // } else {
-                    //     Angle::ZERO
-                    // },
+                    context.data.heading
+                        + if self.reverse {
+                            Angle::HALF_TURN
+                        } else {
+                            Angle::ZERO
+                        },
                     self.config,
                 ));
                 self.update(context)

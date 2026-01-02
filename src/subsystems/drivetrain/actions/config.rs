@@ -32,6 +32,7 @@ pub struct ActionConfig {
     pub pursuit_lookahead: f64,
 
     pub boomerang_lead: f64,
+    pub boomerang_close: f64,
 
     pub linear_error_tolerance: f64,
     pub linear_velocity_tolerance: f64,

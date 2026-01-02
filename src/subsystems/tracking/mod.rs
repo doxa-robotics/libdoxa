@@ -72,7 +72,7 @@ impl TrackingSubsystem {
                     // We subtract the heading delta to get the new heading
                     // because we use mathematical positive rotation (CCW) but
                     // the heading sensor uses CW as positive rotation.
-                    let heading = -(raw_heading/* + *heading_offset.borrow() */);
+                    let heading = -(raw_heading + *heading_offset.borrow());
 
                     // Average the heading and displacement of the tracking wheels
                     let average_heading = (heading + last_heading) / 2.0;
@@ -95,7 +95,7 @@ impl TrackingSubsystem {
                     {
                         let mut current = current.borrow_mut();
                         let rotation_matrix =
-                            Rotation2::new((average_heading - Angle::HALF_TURN).as_radians());
+                            Rotation2::new((average_heading + Angle::QUARTER_TURN).as_radians());
                         *current = current.advance(
                             current.offset + rotation_matrix * average_displacement,
                             average_heading,
@@ -109,14 +109,53 @@ impl TrackingSubsystem {
                     {
                         // SAFETY: This is not safe.
                         let mut display = unsafe { vexide::display::Display::new() };
+                        let current = { current.borrow().clone() };
                         let shape = vexide::display::Circle::new(
                             vexide::math::Point2 {
-                                x: (current.borrow().offset.x * 0.066666667 + 120.0) as i16,
-                                y: (120.0 - current.borrow().offset.y * 0.066666667) as i16,
+                                x: (current.offset.x * 0.066666667 + 120.0) as i16,
+                                y: (120.0 - current.offset.y * 0.066666667) as i16,
                             },
                             1,
                         );
                         display.fill(&shape, (255, 0, 0));
+                        display.fill(
+                            &vexide::display::Rect::from_dimensions(
+                                vexide::math::Point2 { x: 300, y: 50 },
+                                150,
+                                100,
+                            ),
+                            vexide::color::Color::WHITE,
+                        );
+                        display.draw_text(
+                            &vexide::display::Text::from_string(
+                                format!("{:.2?}", current.offset / 600.0),
+                                vexide::display::Font::new(
+                                    vexide::display::FontSize::MEDIUM,
+                                    vexide::display::FontFamily::Monospace,
+                                ),
+                                vexide::math::Point2 { x: 305, y: 55 },
+                            ),
+                            vexide::color::Color::BLACK,
+                            None,
+                        );
+                        display.draw_text(
+                            &vexide::display::Text::from_string(
+                                format!(
+                                    "{:.2} r = {:.1}°",
+                                    current.heading.as_radians(),
+                                    current.heading.as_degrees()
+                                ),
+                                vexide::display::Font::new(
+                                    vexide::display::FontSize::MEDIUM,
+                                    vexide::display::FontFamily::Monospace,
+                                ),
+                                vexide::math::Point2 { x: 305, y: 75 },
+                            ),
+                            vexide::color::Color::new(80, 80, 80),
+                            None,
+                        );
+                        display.set_render_mode(vexide::display::RenderMode::DoubleBuffered);
+                        display.render();
                     }
 
                     gyro_calibrating.replace(heading_sensor.is_calibrating());
