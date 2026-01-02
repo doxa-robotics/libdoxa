@@ -61,6 +61,7 @@ impl super::Action for BoomerangAction {
         let local_target = carrot - context.data.offset;
         let angle_to_target = Angle::from_radians(local_target.y.atan2(local_target.x));
 
+        // Compute the angular angle
         let error_anglar = (angle_to_target - context.data.heading).wrapped_half();
         let (error_distance, close) = {
             let norm = local_target.norm();
@@ -68,6 +69,7 @@ impl super::Action for BoomerangAction {
             (norm, close)
         };
 
+        // Check tolerances
         if self
             .tolerances
             .check(error_distance, context.data.linear_velocity())
@@ -76,14 +78,17 @@ impl super::Action for BoomerangAction {
         }
 
         let output_angular = if close {
+            // If we're close, angle changes erratically, so just stop turning
             0.0
         } else {
             self.angular_pid
                 .next_control_output(error_anglar.as_radians())
                 .output
         };
-        let output_linear =
-            self.linear_pid.next_control_output(-error_distance).output * error_anglar.cos();
+        let output_linear = self.linear_pid.next_control_output(-error_distance).output
+            // If the angular error is more than 90 degrees (|cos(angle) < 0|),
+            // stop moving forward
+            * error_anglar.cos().max(0.0);
 
         Some(DrivetrainPair {
             left: output_linear - output_angular,
