@@ -99,7 +99,17 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             {
                 self.target_point = self.path.evaluate(target_t);
                 #[cfg(feature = "unsafe_debug_render")]
-                {
+                if matches!(
+                    // Only render if we're doing autonomous or if disabled
+                    // with a legacy competition switch (what we use for
+                    // testing)
+                    vexide::competition::mode(),
+                    vexide::competition::CompetitionMode::Autonomous
+                        | vexide::competition::CompetitionMode::Disabled
+                ) && matches!(
+                    vexide::competition::system(),
+                    Some(vexide::competition::CompetitionSystem::CompetitionSwitch)
+                ) {
                     // SAFETY: This is not safe.
                     let mut display = unsafe { vexide::display::Display::new() };
                     let shape = vexide::display::Circle::new(
