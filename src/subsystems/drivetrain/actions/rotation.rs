@@ -42,7 +42,7 @@ impl super::Action for RotationAction {
         let error = (Angle::from_radians(self.setpoint) - context.data.heading)
             .wrapped_half()
             .as_radians();
-        log::debug!(
+        log::trace!(
             "Rotation: {:.3} --> {:.3} (error: {:.3})",
             context.data.heading.as_radians(),
             self.setpoint,
