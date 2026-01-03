@@ -21,7 +21,9 @@ impl SimpleLogger {
         Self {
             // We're being very unsafe here.
             #[allow(clippy::arc_with_non_send_sync)]
-            file: Arc::new(Mutex::new(File::options().append(true).open(file).ok())),
+            file: Arc::new(Mutex::new(
+                File::options().append(true).create(true).open(file).ok(),
+            )),
             start_time: std::time::Instant::now(),
         }
     }
@@ -41,17 +43,19 @@ impl log::Log for SimpleLogger {
                 vexide::competition::system(),
                 Some(vexide::competition::CompetitionSystem::FieldControl)
             ) {
-                println!("{} - {}", record.level(), record.args());
+                println!("{:<5} - {}", record.level(), record.args());
             }
             if let Some(mut guard) = self.file.try_lock() {
                 if let Some(file) = guard.as_mut() {
                     _ = writeln!(
                         file,
-                        "{} {} - {}",
-                        self.start_time.elapsed().as_millis(),
+                        "{:>3}.{:03} {:<5} {:<42} - {}",
+                        self.start_time.elapsed().as_secs(),
+                        self.start_time.elapsed().subsec_millis(),
                         record.level(),
+                        record.module_path().unwrap_or("<unknown>"),
                         record.args()
-                    );
+                    )
                 }
             } else {
                 spawn(async {
