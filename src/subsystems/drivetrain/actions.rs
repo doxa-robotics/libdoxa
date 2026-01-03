@@ -9,6 +9,7 @@ mod forward;
 mod lazy;
 mod pure_pursuit;
 mod rotation;
+mod seeking;
 mod turn_to_point;
 mod voltage;
 
@@ -34,5 +35,6 @@ pub use forward::ForwardAction;
 pub use lazy::LazyAction;
 pub use pure_pursuit::PurePursuitAction;
 pub use rotation::RotationAction;
+pub use seeking::SeekingAction;
 pub use turn_to_point::TurnToPointAction;
 pub use voltage::VoltageAction;
