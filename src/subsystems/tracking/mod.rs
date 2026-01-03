@@ -17,7 +17,6 @@ pub use tracking_data::TrackingData;
 pub struct TrackingSubsystem {
     current: Rc<RefCell<TrackingData>>,
     reverse: Rc<RefCell<bool>>,
-    gyro_calibrating: Rc<RefCell<bool>>,
     heading_offset: Rc<RefCell<Angle>>,
     _task: Rc<vexide::task::Task<()>>,
 }
@@ -46,12 +45,10 @@ impl TrackingSubsystem {
             .into_iter()
             .collect::<Vec<wheel::TrackingWheel<LT>>>();
         let current = Rc::new(RefCell::new(TrackingData::default()));
-        let gyro_calibrating = Rc::new(RefCell::new(false));
         let heading_offset = Rc::new(RefCell::new(Angle::default()));
         Self {
             current: current.clone(),
             reverse: Rc::new(RefCell::new(false)),
-            gyro_calibrating: gyro_calibrating.clone(),
             heading_offset: heading_offset.clone(),
             _task: Rc::new(vexide::task::spawn(async move {
                 // The raw heading is the heading from the heading sensor,
@@ -168,8 +165,6 @@ impl TrackingSubsystem {
                         display.render();
                     }
 
-                    gyro_calibrating.replace(heading_sensor.is_calibrating());
-
                     vexide::time::sleep(RotationSensor::UPDATE_INTERVAL).await;
                 }
             })),
@@ -247,16 +242,5 @@ impl TrackingSubsystem {
     /// driver control.
     pub fn set_reverse(&mut self, reverse: bool) {
         *self.reverse.borrow_mut() = reverse;
-    }
-
-    /// Returns whether the gyro is currently calibrating.
-    pub fn is_gyro_calibrating(&self) -> bool {
-        *self.gyro_calibrating.borrow()
-    }
-
-    /// Returns a Rc<RefCell<bool>> that indicates whether the gyro is
-    /// currently calibrating.
-    pub fn gyro_calibrating(&self) -> Rc<RefCell<bool>> {
-        self.gyro_calibrating.clone()
     }
 }
