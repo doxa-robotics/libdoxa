@@ -49,7 +49,7 @@ impl log::Log for SimpleLogger {
                 if let Some(file) = guard.as_mut() {
                     _ = writeln!(
                         file,
-                        "{:>3}.{:03} {:<5} {:<42} - {}",
+                        "{:>3}.{:03} {:<5} {:<52} - {}",
                         self.start_time.elapsed().as_secs(),
                         self.start_time.elapsed().subsec_millis(),
                         record.level(),
