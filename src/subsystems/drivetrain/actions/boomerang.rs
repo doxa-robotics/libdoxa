@@ -84,9 +84,14 @@ impl super::Action for BoomerangAction {
             })
         .wrapped_half();
         let (error_distance, close) = {
-            let norm = local_target.norm();
-            let close = norm < self.close;
-            (norm, close)
+            // Find the "straight-line" distance to the target point
+            // See subsystems::tracking::tracking_data for more information about
+            // dot products.
+            let heading_vector =
+                Vector2::new(context.data.heading.cos(), context.data.heading.sin());
+            let distance = local_target.dot(&heading_vector);
+            let close = distance.abs() < self.close;
+            (distance, close)
         };
 
         // Check tolerances
