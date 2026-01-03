@@ -55,11 +55,9 @@ impl Action for DriveToPointAction {
         match &mut self.state {
             DriveToPointState::NotStarted => {
                 // Transition to the turning state
-                self.state = DriveToPointState::Turning(TurnToPointAction::new(
-                    self.target,
-                    self.reverse,
-                    self.turn_config,
-                ));
+                let turn = TurnToPointAction::new(self.target, self.turn_config);
+                self.state =
+                    DriveToPointState::Turning(if self.reverse { turn.reversed() } else { turn });
                 self.update(context)
             }
             DriveToPointState::Turning(turn_action) => {

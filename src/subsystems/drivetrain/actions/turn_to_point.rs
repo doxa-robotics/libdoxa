@@ -21,13 +21,18 @@ pub struct TurnToPointAction {
 }
 
 impl TurnToPointAction {
-    pub fn new(target: Point2<f64>, reverse: bool, config: ActionConfig) -> Self {
+    pub fn new(target: Point2<f64>, config: ActionConfig) -> Self {
         Self {
             target,
             config,
             action: None,
-            reverse,
+            reverse: false,
         }
+    }
+
+    pub fn reversed(mut self) -> Self {
+        self.reverse = true;
+        self
     }
 }
 
