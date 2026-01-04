@@ -48,21 +48,23 @@ impl super::Action for SeekingAction {
         let local_target = self.target_point - context.data.offset;
         let angle_to_target = Angle::from_radians(local_target.y.atan2(local_target.x));
 
+        let heading = if self.reverse {
+            // If we're reversed, we want to face backwards
+            context.data.heading + Angle::HALF_TURN
+        } else {
+            context.data.heading
+        };
+
         // Compute the angular angle
-        let error_angular = (angle_to_target
-            - if self.reverse {
-                // If we're reversed, we want to face backwards
-                context.data.heading + Angle::HALF_TURN
-            } else {
-                context.data.heading
-            })
-        .wrapped_half();
+        let error_angular = (angle_to_target - heading).wrapped_half();
         let (error_distance, close) = {
             // Find the "straight-line" distance to the target point
-            // See subsystems::tracking::tracking_data for more information about
-            // dot products.
-            let heading_vector =
-                Vector2::new(context.data.heading.cos(), context.data.heading.sin());
+            // Dot products are essentially the distance of a vector in another
+            // vector's direction. This lets us find the distance to the target
+            // point in the direction the robot is facing -- an imaginary line
+            // perpendicular to the robot's heading that intersects the target
+            // point.
+            let heading_vector = Vector2::new(heading.cos(), heading.sin());
             let distance = local_target.dot(&heading_vector);
             let close = distance.abs() < self.close;
             (distance, close)
