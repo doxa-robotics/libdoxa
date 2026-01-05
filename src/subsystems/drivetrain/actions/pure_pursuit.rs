@@ -2,9 +2,7 @@ use nalgebra::Point2;
 use pid::Pid;
 use vexide::math::Angle;
 
-use crate::{
-    path_planner::Path, subsystems::drivetrain::DrivetrainPair, utils::settling::Tolerances,
-};
+use crate::{path_planner::Path, subsystems::drivetrain::DrivetrainPair};
 
 use super::{BoomerangAction, config::ActionConfig};
 
@@ -17,38 +15,34 @@ pub struct PurePursuitAction<T: Path> {
     end_point: Point2<f64>,
 
     // State
-    settled: bool,
     last_t: f64,
     final_seeking: Option<BoomerangAction>,
 
     // PIDs
-    rotational_pid: Pid<f64>,
+    angular_pid: Pid<f64>,
     linear_pid: Pid<f64>,
 
     // Configuration
     path: T,
-    disable_seeking_distance: f64,
-    linear_tolerances: Tolerances,
+    close: f64,
     reverse: bool,
     config: ActionConfig,
 }
 
 impl<T: Path> PurePursuitAction<T> {
-    pub fn new(path: T, disable_seeking_distance: Option<f64>, config: ActionConfig) -> Self {
+    pub fn new(path: T, config: ActionConfig) -> Self {
         let path_total = path.length();
         Self {
             end_point: path.evaluate(1.0),
             path_total,
-            disable_seeking_distance: disable_seeking_distance.unwrap_or(0.0),
+            close: config.boomerang_close,
             target_point: path.evaluate(0.0),
             linear_pid: config.linear_pid(0.0),
             path,
             last_t: 0.0,
-            settled: false,
             final_seeking: None,
             lookahead: config.pursuit_lookahead,
-            rotational_pid: config.pursuit_turn_pid(0.0),
-            linear_tolerances: config.linear_tolerances(),
+            angular_pid: config.pursuit_turn_pid(0.0),
             config,
             reverse: false,
         }
@@ -63,14 +57,19 @@ impl<T: Path> PurePursuitAction<T> {
         self.reverse = true;
         self
     }
+
+    /// Sets the "close" distance for this action.
+    ///
+    /// This is when the action will switch to final seeking mode using a
+    /// boomerang trajectory.
+    pub fn with_close(mut self, close: f64) -> Self {
+        self.close = close;
+        self
+    }
 }
 
 impl<T: Path> super::Action for PurePursuitAction<T> {
     fn update(&mut self, context: super::ActionContext) -> Option<DrivetrainPair> {
-        // If we are settled, we don't need to do anything
-        if self.settled {
-            return None;
-        }
         if let Some(mut action) = self.final_seeking {
             // If we are in final seeking mode, just run that action
             action.update(context)
@@ -83,19 +82,11 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             let path_distance = self.path.length_until(current_t);
             // Calculate the distance and velocity to the end of the path
             let linear_error = self.path_total - path_distance;
-            let linear_velocity = context.data.linear_velocity();
-            // Are we there yet?
-            if self.linear_tolerances.check(linear_error, linear_velocity) {
-                self.settled = true;
-                return None;
-            }
             self.last_t = current_t;
 
             // If we're within the disable seeking distance, let's just start seeking
             // the end of the path
-            if nalgebra::distance(&self.target_point, &context.data.offset)
-                < self.disable_seeking_distance
-            {
+            if nalgebra::distance(&self.target_point, &context.data.offset) < self.close {
                 self.final_seeking = Some(BoomerangAction::new(
                     self.end_point,
                     Angle::from_radians(self.path.evaluate_angle(1.0)),
@@ -160,7 +151,7 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
 
             // Calculate the rotational voltage
             let rotational_voltage = self
-                .rotational_pid
+                .angular_pid
                 // in principle this should be negative but
                 // TODO: verify that the sign is correct
                 .next_control_output(-angular_error.as_radians())
