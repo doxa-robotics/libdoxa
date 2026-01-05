@@ -160,7 +160,9 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             // Calculate the linear part of the differential drive
             let linear_voltage = self.linear_pid.next_control_output(-linear_error).output
                 // scalar to reduce speed on turns. more info in boomerang action
-                * angular_error.cos().max(0.0);
+                * angular_error.cos().max(0.0)
+                // If reversed, invert the linear output to drive backwards
+                * if self.reverse { -1.0 } else { 1.0 };
 
             Some(DrivetrainPair {
                 left: linear_voltage - rotational_voltage,
