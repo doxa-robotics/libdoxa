@@ -167,7 +167,7 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             Some(DrivetrainPair {
                 left: linear_voltage - rotational_voltage,
                 right: linear_voltage + rotational_voltage,
-                units: crate::subsystems::drivetrain::drivetrain_pair::DrivetrainUnits::RPM,
+                units: crate::subsystems::drivetrain::drivetrain_pair::DrivetrainUnits::Voltage,
             })
         }
     }
