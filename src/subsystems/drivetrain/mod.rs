@@ -51,6 +51,21 @@ impl DrivetrainActionFuture {
         self.callback = Some(RefCell::new(Box::new(callback)));
         self
     }
+
+    pub fn with_once_callback(
+        mut self,
+        condition: impl Fn(&TrackingData) -> bool + 'static,
+        mut callback: impl FnMut() + 'static,
+    ) -> Self {
+        let mut has_triggered = false;
+        self.callback = Some(RefCell::new(Box::new(move |data: TrackingData| {
+            if !has_triggered && condition(&data) {
+                has_triggered = true;
+                callback();
+            }
+        })));
+        self
+    }
 }
 
 #[allow(clippy::type_complexity)]
