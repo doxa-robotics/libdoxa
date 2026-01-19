@@ -4,6 +4,7 @@ use nalgebra::Point2;
 
 pub mod compound;
 pub mod cubic_parametric;
+pub mod linear;
 
 pub trait Path: Debug {
     /// Returns the length of the path from t=0 to t=`t`. This is calculated as
