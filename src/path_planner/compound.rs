@@ -113,3 +113,140 @@ impl Path for CompoundPath {
         self.paths[path].evaluate_angle(local_t)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Debug)]
+    struct MockPath {
+        length: f64,
+        start: Point2<f64>,
+        end: Point2<f64>,
+    }
+
+    impl Path for MockPath {
+        fn length(&self) -> f64 {
+            self.length
+        }
+
+        fn length_until(&self, t: f64) -> f64 {
+            self.length * t
+        }
+
+        fn evaluate(&self, t: f64) -> Point2<f64> {
+            Point2::new(
+                self.start.x + (self.end.x - self.start.x) * t,
+                self.start.y + (self.end.y - self.start.y) * t,
+            )
+        }
+
+        fn evaluate_angle(&self, _t: f64) -> f64 {
+            0.0
+        }
+    }
+
+    #[test]
+    fn test_single_path() {
+        let path = Box::new(MockPath {
+            length: 10.0,
+            start: Point2::new(0.0, 0.0),
+            end: Point2::new(10.0, 0.0),
+        });
+        let compound = CompoundPath::new(vec![path]);
+        assert_eq!(compound.length(), 10.0);
+    }
+
+    #[test]
+    fn test_multiple_paths() {
+        let paths = vec![
+            Box::new(MockPath {
+                length: 10.0,
+                start: Point2::new(0.0, 0.0),
+                end: Point2::new(10.0, 0.0),
+            }) as Box<dyn Path>,
+            Box::new(MockPath {
+                length: 5.0,
+                start: Point2::new(10.0, 0.0),
+                end: Point2::new(10.0, 5.0),
+            }),
+        ];
+        let compound = CompoundPath::new(paths);
+        assert_eq!(compound.length(), 15.0);
+    }
+
+    #[test]
+    fn test_evaluate_first_half() {
+        let paths = vec![
+            Box::new(MockPath {
+                length: 10.0,
+                start: Point2::new(0.0, 0.0),
+                end: Point2::new(10.0, 0.0),
+            }) as Box<dyn Path>,
+            Box::new(MockPath {
+                length: 10.0,
+                start: Point2::new(10.0, 0.0),
+                end: Point2::new(20.0, 0.0),
+            }),
+        ];
+        let compound = CompoundPath::new(paths);
+        let point = compound.evaluate(0.25);
+        assert_eq!(point.x, 5.0);
+    }
+
+    #[test]
+    fn test_evaluate_second_half() {
+        let paths = vec![
+            Box::new(MockPath {
+                length: 10.0,
+                start: Point2::new(0.0, 0.0),
+                end: Point2::new(10.0, 0.0),
+            }) as Box<dyn Path>,
+            Box::new(MockPath {
+                length: 10.0,
+                start: Point2::new(10.0, 0.0),
+                end: Point2::new(20.0, 0.0),
+            }),
+        ];
+        let compound = CompoundPath::new(paths);
+        let point = compound.evaluate(0.75);
+        assert_eq!(point.x, 15.0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_disconnected_paths_panic() {
+        let paths = vec![
+            Box::new(MockPath {
+                length: 10.0,
+                start: Point2::new(0.0, 0.0),
+                end: Point2::new(10.0, 0.0),
+            }) as Box<dyn Path>,
+            Box::new(MockPath {
+                length: 10.0,
+                start: Point2::new(20.0, 0.0),
+                end: Point2::new(30.0, 0.0),
+            }),
+        ];
+        CompoundPath::new(paths);
+    }
+
+    #[test]
+    fn test_length_until() {
+        let paths = vec![
+            Box::new(MockPath {
+                length: 10.0,
+                start: Point2::new(0.0, 0.0),
+                end: Point2::new(10.0, 0.0),
+            }) as Box<dyn Path>,
+            Box::new(MockPath {
+                length: 10.0,
+                start: Point2::new(10.0, 0.0),
+                end: Point2::new(20.0, 0.0),
+            }),
+        ];
+        let compound = CompoundPath::new(paths);
+        assert_eq!(compound.length_until(0.5), 10.0);
+        assert_eq!(compound.length_until(1.0), 20.0);
+    }
+}
