@@ -172,12 +172,12 @@ impl Drivetrain {
                                 }
                                 drop(action_owned);
                             } else {
-                                // Zero out the motors if the action is done
-                                left.set_voltage(0.0)
-                                    .expect_report("failed to zero left dt voltage");
+                                log::info!("Drivetrain action complete");
+                                left.brake(vexide::smart::motor::BrakeMode::Brake)
+                                    .expect_report("failed to zero left dt");
                                 right
-                                    .set_voltage(0.0)
-                                    .expect_report("failed to zero right dt voltage");
+                                    .brake(vexide::smart::motor::BrakeMode::Brake)
+                                    .expect_report("failed to zero right dt");
                                 // Notify the main task that the action is done
                                 action_ref
                                     .1
