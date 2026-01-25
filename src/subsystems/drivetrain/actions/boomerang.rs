@@ -2,7 +2,10 @@ use nalgebra::{Point2, Vector2};
 use pid::Pid;
 use vexide::math::Angle;
 
-use crate::{subsystems::drivetrain::DrivetrainPair, utils::settling::Tolerances};
+use crate::{
+    subsystems::drivetrain::DrivetrainPair,
+    utils::{settling::Tolerances, vexide_fix::VexideWrappedHalfFixExt},
+};
 
 // Inspired by https://github.com/vexide/evian/blob/2c07838519f335f2308d7d1b869cb62363f635fb/packages/evian-motion/src/seeking/boomerang.rs
 
@@ -82,7 +85,7 @@ impl super::Action for BoomerangAction {
         };
 
         // Compute the angular angle
-        let error_angular = (angle_to_target - heading).wrapped_half();
+        let error_angular = (angle_to_target - heading).wrapped_half_fixed();
         let (error_distance, close) = {
             // Find the "straight-line" distance to the target point
             // See subsystems::tracking::tracking_data for more information about
@@ -106,7 +109,7 @@ impl super::Action for BoomerangAction {
             0.0
         } else {
             self.angular_pid
-                .next_control_output(error_angular.as_radians())
+                .next_control_output(-error_angular.as_radians())
                 .output
         };
         let output_linear = self.linear_pid.next_control_output(-error_distance).output

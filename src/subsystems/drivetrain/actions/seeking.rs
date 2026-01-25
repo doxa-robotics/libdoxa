@@ -2,7 +2,10 @@ use nalgebra::{Point2, Vector2};
 use pid::Pid;
 use vexide::math::Angle;
 
-use crate::{subsystems::drivetrain::DrivetrainPair, utils::settling::Tolerances};
+use crate::{
+    subsystems::drivetrain::DrivetrainPair,
+    utils::{settling::Tolerances, vexide_fix::VexideWrappedHalfFixExt},
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct SeekingAction {
@@ -56,7 +59,7 @@ impl super::Action for SeekingAction {
         };
 
         // Compute the angular angle
-        let error_angular = (angle_to_target - heading).wrapped_half();
+        let error_angular = (angle_to_target - heading).wrapped_half_fixed();
         let (error_distance, close) = {
             // Find the "straight-line" distance to the target point
             // Dot products are essentially the distance of a vector in another
@@ -83,7 +86,7 @@ impl super::Action for SeekingAction {
             0.0
         } else {
             self.angular_pid
-                .next_control_output(error_angular.as_radians())
+                .next_control_output(-error_angular.as_radians())
                 .output
         };
         let output_linear = self.linear_pid.next_control_output(-error_distance).output

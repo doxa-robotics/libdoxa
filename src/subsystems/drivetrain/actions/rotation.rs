@@ -1,4 +1,4 @@
-use crate::utils::settling;
+use crate::utils::{settling, vexide_fix::VexideWrappedHalfFixExt};
 use pid::Pid;
 use vexide::math::Angle;
 
@@ -40,7 +40,7 @@ impl super::Action for RotationAction {
     ) -> Option<crate::subsystems::drivetrain::DrivetrainPair> {
         // Calculate the shortest angular error
         let error = (Angle::from_radians(self.setpoint) - context.data.heading)
-            .wrapped_half()
+            .wrapped_half_fixed()
             .as_radians();
         log::trace!(
             "Rotation: {:.3} --> {:.3} (error: {:.3})",
@@ -56,7 +56,7 @@ impl super::Action for RotationAction {
             return None;
         }
 
-        let output = self.controller.next_control_output(error).output;
+        let output = self.controller.next_control_output(-error).output;
 
         // Apply the output as a voltage pair for rotation
         Some(crate::subsystems::drivetrain::DrivetrainPair::new_voltage(

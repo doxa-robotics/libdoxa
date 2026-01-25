@@ -147,13 +147,12 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
                 } else {
                     Angle::ZERO
                 }))
-            .wrapped_half();
+            .wrapped_half_fixed();
 
             // Calculate the rotational voltage
             let rotational_voltage = self
                 .angular_pid
-                // in principle this should be negative but
-                // TODO: verify that the sign is correct
+                // in principle this should be negative
                 .next_control_output(-angular_error.as_radians())
                 .output;
 
