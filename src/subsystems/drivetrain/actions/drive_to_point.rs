@@ -1,9 +1,9 @@
 use nalgebra::Point2;
 
-use super::BoomerangAction;
 use super::config::ActionConfig;
 use super::{Action, ActionContext, turn_to_point::TurnToPointAction};
 use crate::subsystems::drivetrain::DrivetrainPair;
+use crate::subsystems::drivetrain::actions::SeekingAction;
 
 /// An action that drives the robot to a specific point.
 ///
@@ -24,7 +24,7 @@ pub struct DriveToPointAction {
 enum DriveToPointState {
     NotStarted,
     Turning(TurnToPointAction),
-    Driving(BoomerangAction),
+    Driving(SeekingAction),
     Done,
 }
 
@@ -65,12 +65,11 @@ impl Action for DriveToPointAction {
                     return Some(voltage);
                 }
                 // Transition to driving action
-                let boomerang =
-                    BoomerangAction::new(self.target, context.data.heading, self.config);
+                let seeking = SeekingAction::new(self.target, self.config);
                 self.state = DriveToPointState::Driving(if self.reverse {
-                    boomerang.reversed()
+                    seeking.reversed()
                 } else {
-                    boomerang
+                    seeking
                 });
                 self.update(context)
             }

@@ -2,9 +2,13 @@ use nalgebra::Point2;
 use pid::Pid;
 use vexide::math::Angle;
 
-use crate::{path_planner::Path, subsystems::drivetrain::DrivetrainPair};
+use crate::{
+    path_planner::Path,
+    subsystems::drivetrain::{DrivetrainPair, actions::SeekingAction},
+    utils::vexide_fix::VexideWrappedHalfFixExt,
+};
 
-use super::{BoomerangAction, config::ActionConfig};
+use super::config::ActionConfig;
 
 #[derive(Debug)]
 pub struct PurePursuitAction<T: Path> {
@@ -16,7 +20,7 @@ pub struct PurePursuitAction<T: Path> {
 
     // State
     last_t: f64,
-    final_seeking: Option<BoomerangAction>,
+    final_seeking: Option<SeekingAction>,
 
     // PIDs
     angular_pid: Pid<f64>,
@@ -42,7 +46,7 @@ impl<T: Path> PurePursuitAction<T> {
             last_t: 0.0,
             final_seeking: None,
             lookahead: config.pursuit_lookahead,
-            angular_pid: config.pursuit_turn_pid(0.0),
+            angular_pid: config.turn_pid(0.0),
             config,
             reverse: false,
         }
@@ -87,11 +91,7 @@ impl<T: Path> super::Action for PurePursuitAction<T> {
             // If we're within the disable seeking distance, let's just start seeking
             // the end of the path
             if nalgebra::distance(&self.target_point, &context.data.offset) < self.close {
-                self.final_seeking = Some(BoomerangAction::new(
-                    self.end_point,
-                    Angle::from_radians(self.path.evaluate_angle(1.0)),
-                    self.config,
-                ));
+                self.final_seeking = Some(SeekingAction::new(self.end_point, self.config));
                 return self.final_seeking.as_mut().unwrap().update(context);
             }
 

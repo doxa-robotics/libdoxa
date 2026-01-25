@@ -74,6 +74,11 @@ impl super::Action for SeekingAction {
         };
 
         // Check tolerances
+        log::debug!(
+            "Seeking: distance error = {:.3}, velocity = {:.3}",
+            error_distance,
+            context.data.linear_velocity()
+        );
         if self
             .tolerances
             .check(error_distance, context.data.linear_velocity())
