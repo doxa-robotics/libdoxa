@@ -185,7 +185,7 @@ impl Drivetrain {
                             }
                         }
                     }
-                    vexide::time::sleep(core::time::Duration::from_millis(10)).await;
+                    vexide::time::sleep(core::time::Duration::from_millis(20)).await;
                 }
             }),
         }
