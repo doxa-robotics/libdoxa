@@ -24,6 +24,12 @@ impl From<f64> for DrivetrainPair {
 }
 
 impl DrivetrainPair {
+    pub const ZERO: Self = DrivetrainPair {
+        left: 0.0,
+        right: 0.0,
+        units: DrivetrainUnits::Voltage,
+    };
+
     /// Constructs a new DrivetrainPair using RPM units
     pub fn new_rpm(left: f64, right: f64) -> Self {
         DrivetrainPair {
