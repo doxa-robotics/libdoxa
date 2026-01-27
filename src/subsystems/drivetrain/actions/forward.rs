@@ -52,6 +52,13 @@ impl super::Action for ForwardAction {
             distance *= -1.0;
         }
         let error = self.setpoint - distance;
+
+        log::info!(
+            "ForwardAction: setpoint = {}, travelled = {}, error = {}",
+            self.setpoint,
+            distance,
+            error
+        );
         if self.tolerances.check(error, context.data.linear_velocity()) {
             return None;
         }
